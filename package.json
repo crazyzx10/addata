@@ -4,6 +4,7 @@
   "description": "",
   "main": "fetch_wechat_ad_data.js",
   "scripts": {
+    "start": "node fetch_wechat_ad_data.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "mysql2": "^3.22.3"
   }
 }

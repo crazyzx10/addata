@@ -1,45 +1,34 @@
+require('dotenv').config();
 const https = require('https');
 const mysql = require('mysql2/promise');
 
 const CONFIG = {
     DB: {
-        host: 'mysql6.sqlpub.com',
-        port: 3311,
-        user: 'crazyzx',
-        password: 'YV1KBTQoxozCAaPC',
-        database: 'addata'
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT),
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE
     },
-    API_BASE: 'https://api.weixin.qq.com/publisher/stat',
-    START_DATE: '2025-07-01'
+    API_BASE: process.env.API_BASE,
+    START_DATE: process.env.START_DATE
 };
 
-const MINI_PROGRAMS = [
-    {
-        name: '光小充',
-        appid: 'wx92518cf320f09758',
-        appsecret: 'cb3e003deafa47458e06f511def0020d'
-    },
-    {
-        name: '闪充开箱宝箱',
-        appid: 'wx5f70a3c12841dcaa',
-        appsecret: '2aefbed761337bc87434d0553d11ffd6'
-    },
-    {
-        name: '闪充大转盘',
-        appid: 'wx813bf155d7f3808f',
-        appsecret: 'e265cdd3b5e1f66eb3ebdf1836fe381f'
-    },
-    {
-        name: '马年福袋',
-        appid: 'wxe8fd1abf5abad7d2',
-        appsecret: '05a8318ebb8ec2096b05c79b1728bc0c'
-    },
-    {
-        name: '光合大问答',
-        appid: 'wx21b956e4dd92ccc1',
-        appsecret: 'df9a5b0e9d63ee707afc0d41de0b0e40'
+function getMiniPrograms() {
+    const programs = [];
+    let index = 1;
+    while (process.env[`MINI_PROGRAM_${index}_NAME`]) {
+        programs.push({
+            name: process.env[`MINI_PROGRAM_${index}_NAME`],
+            appid: process.env[`MINI_PROGRAM_${index}_APPID`],
+            appsecret: process.env[`MINI_PROGRAM_${index}_APPSECRET`]
+        });
+        index++;
     }
-];
+    return programs;
+}
+
+const MINI_PROGRAMS = getMiniPrograms();
 
 const AD_SLOT_NAMES = {
     'SLOT_ID_WEAPP_VIDEO_BEGIN': '视频贴片',
