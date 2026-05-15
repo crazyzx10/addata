@@ -164,6 +164,7 @@ async function fetchAllPagesByDateRange(token, action, startDate, endDate, appid
     let page = 1;
     const pageSize = 90;
     let hasMore = true;
+    let lastData = null;
 
     while (hasMore) {
         const data = await fetchDataWithRetry(token, action, appid, appsecret, {
@@ -173,6 +174,7 @@ async function fetchAllPagesByDateRange(token, action, startDate, endDate, appid
             page_size: String(pageSize)
         });
 
+        lastData = data;
         const list = data.list || [];
         allList = allList.concat(list);
 
@@ -185,7 +187,7 @@ async function fetchAllPagesByDateRange(token, action, startDate, endDate, appid
         }
     }
 
-    return { list: allList, totalNum: data.total_num || allList.length };
+    return { list: allList, totalNum: lastData?.total_num || allList.length };
 }
 
 async function getAdunitList(token, appid, appsecret) {
