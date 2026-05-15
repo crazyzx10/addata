@@ -160,13 +160,34 @@ async function fetchDataWithRetry(token, action, appid, appsecret, extraParams =
 }
 
 async function fetchAllPagesByDateRange(token, action, startDate, endDate, appid, appsecret) {
-    const data = await fetchDataWithRetry(token, action, appid, appsecret, {
-        start_date: startDate,
-        end_date: endDate
-    });
+    let allList = [];
+    let page = 1;
+    const pageSize = 90;
+    let hasMore = true;
+    let lastData = null;
 
-    const list = data.list || [];
-    return { list, totalNum: data.total_num || list.length };
+    while (hasMore) {
+        const data = await fetchDataWithRetry(token, action, appid, appsecret, {
+            start_date: startDate,
+            end_date: endDate,
+            page: String(page),
+            page_size: String(pageSize)
+        });
+
+        lastData = data;
+        const list = data.list || [];
+        allList = allList.concat(list);
+
+        const totalNum = data.total_num || 0;
+        if (page * pageSize >= totalNum || list.length < pageSize) {
+            hasMore = false;
+        } else {
+            page++;
+            await sleep(500);
+        }
+    }
+
+    return { list: allList, totalNum: lastData?.total_num || allList.length };
 }
 
 async function getAdunitList(token, appid, appsecret) {
