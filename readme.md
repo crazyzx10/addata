@@ -2,11 +2,11 @@
 打开 e:\\ZZX\\Projects\\addata\\fetch\_wechat\_ad\_data.js ，在 MINI\_PROGRAMS 数组中添加新配置：
 
 
-const MINI\_PROGRAMS = \[
+const MINI_PROGRAMS = [
 {
-name: '光小充',
-appid: 'wx92518cf320f09758',
-appsecret: 'cb3e003deafa47458e06f511def0020d'
+name: '您的小程序名称',
+appid: 'wx0000000000000000',
+appsecret: 'your_app_secret_here'
 },
 // 添加更多小程序
 // {
