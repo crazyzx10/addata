@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信广告数据管理系统 - 原型预览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #0a0a0f;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav {
+            display: flex;
+            gap: 40px;
+        }
+
+        .nav-item {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 15px;
+            transition: all 0.3s;
+            padding: 10px 0;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #ffffff;
+            border-bottom-color: #667eea;
+        }
+
+        /* Dashboard */
+        .page-title {
+            font-size: 36px;
+            margin-bottom: 40px;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .stat-value {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        /* Mini Programs Table */
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 20px 24px;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        td {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-enabled {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status-disabled {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Fetch Console */
+        .fetch-console {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .console-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title .icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .date-range .form-input {
+            flex: 1;
+        }
+
+        .date-range span {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkbox-item:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .checkbox-item.checked {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-item input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .checkbox-item span {
+            font-size: 14px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 30px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .progress-status {
+            color: #22c55e;
+        }
+
+        .progress-track {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-detail {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .progress-detail .current {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* Scheduled Status */
+        .scheduled-status {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .scheduled-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .scheduled-info h4 {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .scheduled-info p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: #1a1a24;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 30px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .fetch-console {
+                grid-template-columns: 1fr;
+            }
+
+            .nav {
+                display: none;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header animate-in">
+            <div class="logo">📊 微信广告数据管理系统</div>
+            <nav class="nav">
+                <a href="#dashboard" class="nav-item active">首页</a>
+                <a href="#mini-programs" class="nav-item">小程序</a>
+                <a href="#fetch" class="nav-item">数据拉取</a>
+                <a href="#database" class="nav-item">数据库</a>
+            </nav>
+        </header>
+
+        <!-- Dashboard -->
+        <section id="dashboard" class="animate-in" style="animation-delay: 0.1s">
+            <h1 class="page-title">仪表盘</h1>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📱</div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">已配置小程序</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">正在运行</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-value">2026-05-15</div>
+                    <div class="stat-label">上次拉取</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value">12,345</div>
+                    <div class="stat-label">总记录数</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mini Programs List -->
+        <section id="mini-programs" class="animate-in" style="animation-delay: 0.2s">
+            <div class="section-header">
+                <h2 class="section-title">📱 小程序配置</h2>
+                <button class="btn btn-primary" onclick="openAddModal()">+ 添加小程序</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>小程序名称</th>
+                            <th>AppID</th>
+                            <th>状态</th>
+                            <th>添加时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>光小充</td>
+                            <td style="font-family: monospace; color: rgba(255,255,255,0.6)">wx92518cf320f09758</td>
+                            <td><span class="status-badge status-enabled">运行中</span></td>
+                            <td>2025-07-01</td>
+                            <td>
+                                <button class="action-btn btn-secondary">编辑</button>
+                                <button class="action-btn btn-danger">删除</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>充电桩管理</td>
+                            <td style="font-family: monospace; color: rgba(255,255,255,0.6)">wx1234567890abcdef</td>
+                            <td><span class="status-badge status-enabled">运行中</span></td>
+                            <td>2025-08-15</td>
+                            <td>
+                                <button class="action-btn btn-secondary">编辑</button>
+                                <button class="action-btn btn-danger">删除</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>停车助手</td>
+                            <td style="font-family: monospace; color: rgba(255,255,255,0.6)">wxabcdef1234567890</td>
+                            <td><span class="status-badge status-disabled">已暂停</span></td>
+                            <td>2025-09-20</td>
+                            <td>
+                                <button class="action-btn btn-secondary">编辑</button>
+                                <button class="action-btn btn-danger">删除</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Fetch Console -->
+        <section id="fetch" class="animate-in" style="animation-delay: 0.3s">
+            <h2 class="section-title" style="margin-bottom: 30px;">⚡ 数据拉取控制台</h2>
+
+            <!-- Scheduled Status -->
+            <div class="scheduled-status">
+                <div class="scheduled-icon">✅</div>
+                <div class="scheduled-info">
+                    <h4>定时任务已启用</h4>
+                    <p>每天 06:00 (北京时间) 自动拉取昨天 ~ 今天的数据</p>
+                </div>
+            </div>
+
+            <div class="fetch-console">
+                <!-- Manual Fetch Panel -->
+                <div class="console-panel">
+                    <div class="panel-title">
+                        <div class="icon">📥</div>
+                        手动拉取数据
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">选择小程序</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item checked">
+                                <input type="checkbox" checked>
+                                <span>光小充</span>
+                            </label>
+                            <label class="checkbox-item checked">
+                                <input type="checkbox" checked>
+                                <span>充电桩管理</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox">
+                                <span>停车助手</span>
+                            </label>
+                            <label class="checkbox-item checked">
+                                <input type="checkbox" checked>
+                                <span>钱包小程序</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">选择时间范围</label>
+                        <div class="date-range">
+                            <input type="date" class="form-input" value="2026-04-01">
+                            <span>至</span>
+                            <input type="date" class="form-input" value="2026-04-30">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" style="width: 100%;" onclick="startFetch()">
+                        🚀 开始拉取数据
+                    </button>
+
+                    <!-- Progress -->
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-header">
+                            <span class="progress-status">正在拉取中...</span>
+                            <span>第 3 / 5 批</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="progress-detail">
+                            当前批次：2026-04-08 ~ 2026-04-14（第 3 批，共 5 批）<br>
+                            预计剩余时间：约 2 分钟
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fetch History Panel -->
+                <div class="console-panel">
+                    <div class="panel-title">
+                        <div class="icon">📋</div>
+                        拉取历史
+                    </div>
+
+                    <div class="table-container" style="border: none;">
+                        <table style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>类型</th>
+                                    <th>状态</th>
+                                    <th>记录数</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2026-05-15 06:00</td>
+                                    <td><span style="color: #667eea;">定时</span></td>
+                                    <td><span class="status-badge status-enabled">成功</span></td>
+                                    <td>128</td>
+                                </tr>
+                                <tr>
+                                    <td>2026-05-14 06:00</td>
+                                    <td><span style="color: #667eea;">定时</span></td>
+                                    <td><span class="status-badge status-enabled">成功</span></td>
+                                    <td>145</td>
+                                </tr>
+                                <tr>
+                                    <td>2026-05-13 15:23</td>
+                                    <td><span style="color: #22c55e;">手动</span></td>
+                                    <td><span class="status-badge status-enabled">成功</span></td>
+                                    <td>892</td>
+                                </tr>
+                                <tr>
+                                    <td>2026-05-13 06:00</td>
+                                    <td><span style="color: #667eea;">定时</span></td>
+                                    <td><span class="status-badge status-enabled">成功</span></td>
+                                    <td>156</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Add Mini Program Modal -->
+    <div class="modal-overlay" id="addModal" style="display: none;">
+        <div class="modal">
+            <h3 class="modal-title">添加小程序</h3>
+            
+            <div class="form-group">
+                <label class="form-label">小程序名称</label>
+                <input type="text" class="form-input" placeholder="例如：我的小程序">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">AppID</label>
+                <input type="text" class="form-input" placeholder="wx">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">AppSecret</label>
+                <input type="password" class="form-input" placeholder="请输入 AppSecret">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+
+        function startFetch() {
+            const progressContainer = document.getElementById('progressContainer');
+            progressContainer.style.display = 'block';
+        }
+
+        // Checkbox interactions
+        document.querySelectorAll('.checkbox-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const checkbox = this.querySelector('input');
+                checkbox.checked = !checkbox.checked;
+                this.classList.toggle('checked', checkbox.checked);
+            });
+        });
+    </script>
+</body>
+</html>
