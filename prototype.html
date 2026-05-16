@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>微信广告数据管理系统 - 原型预览</title>
+    <title>微信广告数据管理系统</title>
     <style>
         * {
             margin: 0;
@@ -12,165 +12,291 @@
         }
 
         body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: #0a0a0f;
-            color: #ffffff;
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            display: flex;
+            height: 100vh;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 40px 20px;
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: #ffffff;
+            border-right: 1px solid #e4e7ed;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e4e7ed;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #303133;
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 16px 0;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #606266;
+            font-size: 14px;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: #ecf5ff;
+            color: #409eff;
+        }
+
+        .nav-item.active {
+            background: #ecf5ff;
+            color: #409eff;
+            border-left-color: #409eff;
+        }
+
+        .nav-item .icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         /* Header */
         .header {
+            height: 60px;
+            background: #ffffff;
+            border-bottom: 1px solid #e4e7ed;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 60px;
-            padding-bottom: 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            justify-content: space-between;
+            padding: 0 24px;
         }
 
-        .logo {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .nav {
+        .breadcrumb {
             display: flex;
-            gap: 40px;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #909399;
         }
 
-        .nav-item {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 15px;
-            transition: all 0.3s;
-            padding: 10px 0;
-            border-bottom: 2px solid transparent;
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .nav-item:hover, .nav-item.active {
-            color: #ffffff;
-            border-bottom-color: #667eea;
+        .breadcrumb-item:last-child {
+            color: #303133;
         }
 
-        /* Dashboard */
-        .page-title {
-            font-size: 36px;
-            margin-bottom: 40px;
-            font-weight: 700;
+        .breadcrumb-item .icon {
+            font-size: 16px;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            margin-bottom: 60px;
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
-        .stat-card {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 32px;
-            transition: all 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(102, 126, 234, 0.5);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
+        .header-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 20px;
-            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #606266;
         }
 
-        .stat-value {
-            font-size: 42px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .header-btn:hover {
+            background: #f5f7fa;
         }
 
-        .stat-label {
-            color: rgba(255, 255, 255, 0.5);
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-info:hover {
+            background: #f5f7fa;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
             font-size: 14px;
+            font-weight: 500;
         }
 
-        /* Mini Programs Table */
-        .section {
-            margin-bottom: 60px;
+        .user-name {
+            font-size: 14px;
+            color: #303133;
         }
 
-        .section-header {
+        /* Content Area */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .page-container {
+            background: #ffffff;
+            border-radius: 4px;
+            border: 1px solid #e4e7ed;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e4e7ed;
+        }
+
+        .tab-item {
+            padding: 12px 20px;
+            font-size: 14px;
+            color: #606266;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-item:hover {
+            color: #409eff;
+        }
+
+        .tab-item.active {
+            color: #409eff;
+            border-bottom-color: #409eff;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
         }
 
-        .section-title {
-            font-size: 24px;
-            font-weight: 600;
+        .toolbar-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            background: #ffffff;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            font-size: 14px;
+            color: #606266;
+            width: 200px;
+        }
+
+        .search-box input::placeholder {
+            color: #c0c4cc;
         }
 
         .btn {
-            padding: 12px 24px;
-            border-radius: 10px;
-            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
             font-size: 14px;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            border: 1px solid #dcdfe6;
+            background: #ffffff;
+            color: #606266;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            color: #409eff;
+            border-color: #c6e2ff;
+            background: #ecf5ff;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #409eff;
+            border-color: #409eff;
             color: white;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
+            background: #66b1ff;
+            border-color: #66b1ff;
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+        .toolbar-right {
+            display: flex;
+            gap: 8px;
         }
 
+        /* Table */
         .table-container {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            overflow: hidden;
+            padding: 0 20px;
         }
 
         table {
@@ -179,574 +305,710 @@
         }
 
         th, td {
-            padding: 20px 24px;
+            padding: 12px 16px;
             text-align: left;
-        }
-
-        th {
-            background: rgba(255, 255, 255, 0.05);
-            font-weight: 600;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        td {
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 14px;
         }
 
+        th {
+            background: #f5f7fa;
+            font-weight: 500;
+            color: #909399;
+            border-bottom: 1px solid #e4e7ed;
+        }
+
+        td {
+            border-bottom: 1px solid #ebeef5;
+            color: #606266;
+        }
+
+        tbody tr:hover {
+            background: #f5f7fa;
+        }
+
         .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
             font-size: 12px;
-            font-weight: 600;
         }
 
-        .status-enabled {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
+        .status-success {
+            background: #f0f9eb;
+            color: #67c23a;
         }
 
-        .status-disabled {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
+        .status-danger {
+            background: #fef0f0;
+            color: #f56c6c;
         }
 
-        .action-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-size: 13px;
+        .status-info {
+            background: #f4f4f5;
+            color: #909399;
+        }
+
+        .action-link {
+            color: #409eff;
             cursor: pointer;
-            margin-right: 8px;
-            transition: all 0.2s;
+            margin-right: 12px;
+            font-size: 14px;
         }
 
-        .action-btn:hover {
-            transform: scale(1.05);
+        .action-link:hover {
+            text-decoration: underline;
         }
 
-        /* Fetch Console */
-        .fetch-console {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-        }
-
-        .console-panel {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 32px;
-        }
-
-        .panel-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 24px;
+        .appid-display {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
 
-        .panel-title .icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
+        .appid-text {
+            font-family: monospace;
+            color: #909399;
+            cursor: pointer;
+        }
+
+        .copy-icon {
+            cursor: pointer;
+            color: #c0c4cc;
+        }
+
+        .copy-icon:hover {
+            color: #409eff;
+        }
+
+        /* Pagination */
+        .pagination {
+            padding: 20px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #606266;
+            margin-right: 20px;
+        }
+
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #606266;
+            transition: all 0.2s;
         }
 
-        .form-group {
-            margin-bottom: 24px;
+        .page-btn:hover {
+            color: #409eff;
+            border-color: #c6e2ff;
+        }
+
+        .page-btn.active {
+            background: #409eff;
+            border-color: #409eff;
+            color: white;
+        }
+
+        .page-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .page-select {
+            padding: 6px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #606266;
+            cursor: pointer;
+        }
+
+        /* Fetch Console Page */
+        .console-container {
+            padding: 20px;
+        }
+
+        .console-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e4e7ed;
+            border-radius: 4px;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e4e7ed;
+            font-size: 16px;
+            font-weight: 500;
+            color: #303133;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-row {
+            margin-bottom: 20px;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
+            color: #606266;
         }
 
         .form-input {
             width: 100%;
-            padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            color: white;
+            padding: 10px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
             font-size: 14px;
-            transition: all 0.3s;
+            color: #606266;
+            transition: all 0.2s;
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #409eff;
         }
 
-        .date-range {
+        .date-range-inputs {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
 
-        .date-range .form-input {
+        .date-range-inputs .form-input {
             flex: 1;
         }
 
-        .date-range span {
-            color: rgba(255, 255, 255, 0.5);
+        .date-range-inputs span {
+            color: #909399;
         }
 
-        .checkbox-group {
+        .checkbox-list {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 8px;
         }
 
         .checkbox-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            gap: 8px;
+            padding: 10px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .checkbox-item:hover {
-            border-color: rgba(102, 126, 234, 0.5);
+            border-color: #c6e2ff;
+            background: #f5f7fa;
         }
 
         .checkbox-item.checked {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            border-color: #409eff;
+            background: #ecf5ff;
         }
 
         .checkbox-item input {
-            width: 18px;
-            height: 18px;
-            accent-color: #667eea;
+            width: 16px;
+            height: 16px;
+            accent-color: #409eff;
         }
 
         .checkbox-item span {
             font-size: 14px;
+            color: #606266;
         }
 
-        /* Progress Bar */
-        .progress-container {
-            margin-top: 30px;
+        .scheduled-card {
+            background: #f0f9eb;
+            border: 1px solid #e1f3d8;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .scheduled-icon {
+            width: 48px;
+            height: 48px;
+            background: #67c23a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .scheduled-text h4 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #67c23a;
+            margin-bottom: 4px;
+        }
+
+        .scheduled-text p {
+            font-size: 14px;
+            color: #909399;
+        }
+
+        .progress-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e4e7ed;
+            display: none;
+        }
+
+        .progress-section.show {
+            display: block;
         }
 
         .progress-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 12px;
-            font-size: 14px;
         }
 
         .progress-status {
-            color: #22c55e;
+            font-size: 14px;
+            color: #67c23a;
         }
 
-        .progress-track {
-            height: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
+        .progress-info {
+            font-size: 14px;
+            color: #909399;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #f5f7fa;
+            border-radius: 3px;
             overflow: hidden;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 6px;
+            background: #409eff;
+            border-radius: 3px;
             transition: width 0.5s ease;
         }
 
         .progress-detail {
             margin-top: 16px;
             padding: 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
+            background: #f5f7fa;
+            border-radius: 4px;
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
+            color: #909399;
         }
 
         .progress-detail .current {
-            color: #667eea;
-            font-weight: 600;
+            color: #409eff;
+            font-weight: 500;
         }
 
-        /* Scheduled Status */
-        .scheduled-status {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            padding: 24px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            margin-bottom: 30px;
-        }
-
-        .scheduled-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-        }
-
-        .scheduled-info h4 {
-            font-size: 16px;
-            margin-bottom: 6px;
-        }
-
-        .scheduled-info p {
-            color: rgba(255, 255, 255, 0.5);
+        /* Footer */
+        .footer {
+            padding: 20px;
+            text-align: center;
             font-size: 14px;
+            color: #909399;
         }
 
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal {
-            background: #1a1a24;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 40px;
-            width: 500px;
-            max-width: 90%;
-        }
-
-        .modal-title {
-            font-size: 24px;
-            margin-bottom: 30px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 16px;
-            margin-top: 30px;
-        }
-
-        .modal-actions .btn {
-            flex: 1;
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .fetch-console {
-                grid-template-columns: 1fr;
-            }
-
-            .nav {
-                display: none;
-            }
-        }
-
-        /* Animation */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-in {
-            animation: fadeInUp 0.6s ease forwards;
+        .footer a {
+            color: #409eff;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">📊</div>
+            <div class="sidebar-title">数据管理系统</div>
+        </div>
+        <nav class="nav-menu">
+            <div class="nav-item active" onclick="switchPage('dashboard')">
+                <span class="icon">📊</span>
+                <span>仪表盘</span>
+            </div>
+            <div class="nav-item" onclick="switchPage('mini-programs')">
+                <span class="icon">📱</span>
+                <span>小程序管理</span>
+            </div>
+            <div class="nav-item" onclick="switchPage('fetch')">
+                <span class="icon">⚡</span>
+                <span>数据拉取</span>
+            </div>
+            <div class="nav-item" onclick="switchPage('database')">
+                <span class="icon">🗄️</span>
+                <span>数据库配置</span>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
         <!-- Header -->
-        <header class="header animate-in">
-            <div class="logo">📊 微信广告数据管理系统</div>
-            <nav class="nav">
-                <a href="#dashboard" class="nav-item active">首页</a>
-                <a href="#mini-programs" class="nav-item">小程序</a>
-                <a href="#fetch" class="nav-item">数据拉取</a>
-                <a href="#database" class="nav-item">数据库</a>
-            </nav>
+        <header class="header">
+            <div class="breadcrumb">
+                <div class="breadcrumb-item">
+                    <span class="icon">📊</span>
+                    <span>仪表盘</span>
+                </div>
+                <span>/</span>
+                <div class="breadcrumb-item" id="breadcrumb-current">
+                    <span>小程序管理</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" placeholder="搜索">
+                </div>
+                <div class="header-btn">⚙️</div>
+                <div class="header-btn">🔔</div>
+                <div class="header-btn">⛶</div>
+                <div class="user-info">
+                    <div class="user-avatar">管</div>
+                    <div class="user-name">管理员</div>
+                    <span>▼</span>
+                </div>
+            </div>
         </header>
 
-        <!-- Dashboard -->
-        <section id="dashboard" class="animate-in" style="animation-delay: 0.1s">
-            <h1 class="page-title">仪表盘</h1>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">📱</div>
-                    <div class="stat-value">5</div>
-                    <div class="stat-label">已配置小程序</div>
+        <!-- Content -->
+        <div class="content" id="content-area">
+            <!-- Mini Programs Page (Default) -->
+            <div class="page-container" id="mini-programs-page">
+                <div class="tabs">
+                    <div class="tab-item active">小程序列表</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-value">5</div>
-                    <div class="stat-label">正在运行</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📅</div>
-                    <div class="stat-value">2026-05-15</div>
-                    <div class="stat-label">上次拉取</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-value">12,345</div>
-                    <div class="stat-label">总记录数</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Mini Programs List -->
-        <section id="mini-programs" class="animate-in" style="animation-delay: 0.2s">
-            <div class="section-header">
-                <h2 class="section-title">📱 小程序配置</h2>
-                <button class="btn btn-primary" onclick="openAddModal()">+ 添加小程序</button>
-            </div>
-
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>小程序名称</th>
-                            <th>AppID</th>
-                            <th>状态</th>
-                            <th>添加时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>光小充</td>
-                            <td style="font-family: monospace; color: rgba(255,255,255,0.6)">wx92518cf320f09758</td>
-                            <td><span class="status-badge status-enabled">运行中</span></td>
-                            <td>2025-07-01</td>
-                            <td>
-                                <button class="action-btn btn-secondary">编辑</button>
-                                <button class="action-btn btn-danger">删除</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>充电桩管理</td>
-                            <td style="font-family: monospace; color: rgba(255,255,255,0.6)">wx1234567890abcdef</td>
-                            <td><span class="status-badge status-enabled">运行中</span></td>
-                            <td>2025-08-15</td>
-                            <td>
-                                <button class="action-btn btn-secondary">编辑</button>
-                                <button class="action-btn btn-danger">删除</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>停车助手</td>
-                            <td style="font-family: monospace; color: rgba(255,255,255,0.6)">wxabcdef1234567890</td>
-                            <td><span class="status-badge status-disabled">已暂停</span></td>
-                            <td>2025-09-20</td>
-                            <td>
-                                <button class="action-btn btn-secondary">编辑</button>
-                                <button class="action-btn btn-danger">删除</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Fetch Console -->
-        <section id="fetch" class="animate-in" style="animation-delay: 0.3s">
-            <h2 class="section-title" style="margin-bottom: 30px;">⚡ 数据拉取控制台</h2>
-
-            <!-- Scheduled Status -->
-            <div class="scheduled-status">
-                <div class="scheduled-icon">✅</div>
-                <div class="scheduled-info">
-                    <h4>定时任务已启用</h4>
-                    <p>每天 06:00 (北京时间) 自动拉取昨天 ~ 今天的数据</p>
-                </div>
-            </div>
-
-            <div class="fetch-console">
-                <!-- Manual Fetch Panel -->
-                <div class="console-panel">
-                    <div class="panel-title">
-                        <div class="icon">📥</div>
-                        手动拉取数据
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <div class="search-box">
+                            <span>🔍</span>
+                            <input type="text" placeholder="搜索名称/描述">
+                        </div>
+                        <button class="btn">🔄 重置</button>
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">选择小程序</label>
-                        <div class="checkbox-group">
-                            <label class="checkbox-item checked">
-                                <input type="checkbox" checked>
-                                <span>光小充</span>
-                            </label>
-                            <label class="checkbox-item checked">
-                                <input type="checkbox" checked>
-                                <span>充电桩管理</span>
-                            </label>
-                            <label class="checkbox-item">
-                                <input type="checkbox">
-                                <span>停车助手</span>
-                            </label>
-                            <label class="checkbox-item checked">
-                                <input type="checkbox" checked>
-                                <span>钱包小程序</span>
-                            </label>
-                        </div>
+                    <div class="toolbar-right">
+                        <button class="btn btn-primary" onclick="openAddModal()">+ 新增</button>
+                        <button class="btn">⬇️ 导出</button>
+                        <button class="btn">🔄</button>
+                        <button class="btn">⚙️</button>
+                        <button class="btn">⛶</button>
                     </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>名称</th>
+                                <th>AppID</th>
+                                <th>状态</th>
+                                <th>描述</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>光小充</td>
+                                <td class="appid-display">
+                                    <span class="appid-text">wx92518cf320f09758</span>
+                                    <span class="copy-icon">📋</span>
+                                </td>
+                                <td><span class="status-badge status-success">✅ 启用</span></td>
+                                <td style="color: #c0c4cc">-</td>
+                                <td>2026-04-01</td>
+                                <td>
+                                    <span class="action-link">详情</span>
+                                    <span class="action-link">修改</span>
+                                    <span class="action-link">⋯</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>充电桩管理</td>
+                                <td class="appid-display">
+                                    <span class="appid-text">wx1234567890abcdef</span>
+                                    <span class="copy-icon">📋</span>
+                                </td>
+                                <td><span class="status-badge status-success">✅ 启用</span></td>
+                                <td style="color: #c0c4cc">-</td>
+                                <td>2026-03-15</td>
+                                <td>
+                                    <span class="action-link">详情</span>
+                                    <span class="action-link">修改</span>
+                                    <span class="action-link">⋯</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>停车助手</td>
+                                <td class="appid-display">
+                                    <span class="appid-text">wxabcdef1234567890</span>
+                                    <span class="copy-icon">📋</span>
+                                </td>
+                                <td><span class="status-badge status-danger">⏸️ 禁用</span></td>
+                                <td style="color: #c0c4cc">-</td>
+                                <td>2026-02-20</td>
+                                <td>
+                                    <span class="action-link">详情</span>
+                                    <span class="action-link">修改</span>
+                                    <span class="action-link">⋯</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td>钱包小程序</td>
+                                <td class="appid-display">
+                                    <span class="appid-text">wxfedcba0987654321</span>
+                                    <span class="copy-icon">📋</span>
+                                </td>
+                                <td><span class="status-badge status-success">✅ 启用</span></td>
+                                <td style="color: #c0c4cc">-</td>
+                                <td>2026-01-10</td>
+                                <td>
+                                    <span class="action-link">详情</span>
+                                    <span class="action-link">修改</span>
+                                    <span class="action-link">⋯</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <span class="pagination-info">共 4 条</span>
+                    <button class="page-btn" disabled>❮</button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn" disabled>❯</button>
+                    <select class="page-select">
+                        <option>10 条/页</option>
+                        <option>20 条/页</option>
+                        <option>50 条/页</option>
+                    </select>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <label class="form-label">选择时间范围</label>
-                        <div class="date-range">
-                            <input type="date" class="form-input" value="2026-04-01">
-                            <span>至</span>
-                            <input type="date" class="form-input" value="2026-04-30">
+            <!-- Dashboard Page (Hidden by default) -->
+            <div class="page-container" id="dashboard-page" style="display: none;">
+                <div class="console-container">
+                    <div class="console-grid" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="card">
+                            <div class="card-body">
+                                <div style="font-size: 36px; font-weight: 600; color: #409eff; margin-bottom: 8px;">5</div>
+                                <div style="font-size: 14px; color: #909399;">已配置小程序</div>
+                            </div>
                         </div>
-                    </div>
-
-                    <button class="btn btn-primary" style="width: 100%;" onclick="startFetch()">
-                        🚀 开始拉取数据
-                    </button>
-
-                    <!-- Progress -->
-                    <div class="progress-container" id="progressContainer">
-                        <div class="progress-header">
-                            <span class="progress-status">正在拉取中...</span>
-                            <span>第 3 / 5 批</span>
+                        <div class="card">
+                            <div class="card-body">
+                                <div style="font-size: 36px; font-weight: 600; color: #67c23a; margin-bottom: 8px;">4</div>
+                                <div style="font-size: 14px; color: #909399;">正在运行</div>
+                            </div>
                         </div>
-                        <div class="progress-track">
-                            <div class="progress-fill" style="width: 60%;"></div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div style="font-size: 36px; font-weight: 600; color: #e6a23c; margin-bottom: 8px;">2026-05-16</div>
+                                <div style="font-size: 14px; color: #909399;">上次拉取</div>
+                            </div>
                         </div>
-                        <div class="progress-detail">
-                            当前批次：2026-04-08 ~ 2026-04-14（第 3 批，共 5 批）<br>
-                            预计剩余时间：约 2 分钟
+                        <div class="card">
+                            <div class="card-body">
+                                <div style="font-size: 36px; font-weight: 600; color: #909399; margin-bottom: 8px;">12,345</div>
+                                <div style="font-size: 14px; color: #909399;">总记录数</div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Fetch History Panel -->
-                <div class="console-panel">
-                    <div class="panel-title">
-                        <div class="icon">📋</div>
-                        拉取历史
-                    </div>
+            <!-- Fetch Console Page (Hidden by default) -->
+            <div class="page-container" id="fetch-page" style="display: none;">
+                <div class="console-container">
+                    <div class="console-grid">
+                        <!-- Left Panel -->
+                        <div class="card">
+                            <div class="card-header">数据拉取</div>
+                            <div class="card-body">
+                                <div class="scheduled-card">
+                                    <div class="scheduled-icon">✅</div>
+                                    <div class="scheduled-text">
+                                        <h4>定时任务已启用</h4>
+                                        <p>每天 06:00 (北京时间) 自动拉取昨天 ~ 今天的数据</p>
+                                    </div>
+                                </div>
 
-                    <div class="table-container" style="border: none;">
-                        <table style="font-size: 13px;">
-                            <thead>
-                                <tr>
-                                    <th>时间</th>
-                                    <th>类型</th>
-                                    <th>状态</th>
-                                    <th>记录数</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2026-05-15 06:00</td>
-                                    <td><span style="color: #667eea;">定时</span></td>
-                                    <td><span class="status-badge status-enabled">成功</span></td>
-                                    <td>128</td>
-                                </tr>
-                                <tr>
-                                    <td>2026-05-14 06:00</td>
-                                    <td><span style="color: #667eea;">定时</span></td>
-                                    <td><span class="status-badge status-enabled">成功</span></td>
-                                    <td>145</td>
-                                </tr>
-                                <tr>
-                                    <td>2026-05-13 15:23</td>
-                                    <td><span style="color: #22c55e;">手动</span></td>
-                                    <td><span class="status-badge status-enabled">成功</span></td>
-                                    <td>892</td>
-                                </tr>
-                                <tr>
-                                    <td>2026-05-13 06:00</td>
-                                    <td><span style="color: #667eea;">定时</span></td>
-                                    <td><span class="status-badge status-enabled">成功</span></td>
-                                    <td>156</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                <div class="form-row">
+                                    <label class="form-label">选择小程序</label>
+                                    <div class="checkbox-list">
+                                        <label class="checkbox-item checked">
+                                            <input type="checkbox" checked>
+                                            <span>光小充</span>
+                                        </label>
+                                        <label class="checkbox-item checked">
+                                            <input type="checkbox" checked>
+                                            <span>充电桩管理</span>
+                                        </label>
+                                        <label class="checkbox-item">
+                                            <input type="checkbox">
+                                            <span>停车助手</span>
+                                        </label>
+                                        <label class="checkbox-item checked">
+                                            <input type="checkbox" checked>
+                                            <span>钱包小程序</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <label class="form-label">选择时间范围</label>
+                                    <div class="date-range-inputs">
+                                        <input type="date" class="form-input" value="2026-04-01">
+                                        <span>至</span>
+                                        <input type="date" class="form-input" value="2026-04-30">
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-primary" style="width: 100%; padding: 12px;" onclick="startFetch()">
+                                    🚀 开始拉取数据
+                                </button>
+
+                                <div class="progress-section" id="progressSection">
+                                    <div class="progress-header">
+                                        <span class="progress-status">正在拉取中...</span>
+                                        <span class="progress-info">第 3 / 5 批</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 60%;"></div>
+                                    </div>
+                                    <div class="progress-detail">
+                                        当前批次：<span class="current">2026-04-08 ~ 2026-04-14（第 3 批，共 5 批）</span><br>
+                                        预计剩余时间：约 2 分钟
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel -->
+                        <div class="card">
+                            <div class="card-header">拉取历史</div>
+                            <div class="card-body">
+                                <div class="table-container" style="padding: 0;">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>时间</th>
+                                                <th>类型</th>
+                                                <th>状态</th>
+                                                <th>记录数</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>2026-05-16 06:00</td>
+                                                <td><span style="color: #409eff;">定时</span></td>
+                                                <td><span class="status-badge status-success">成功</span></td>
+                                                <td>128</td>
+                                            </tr>
+                                            <tr>
+                                                <td>2026-05-15 06:00</td>
+                                                <td><span style="color: #409eff;">定时</span></td>
+                                                <td><span class="status-badge status-success">成功</span></td>
+                                                <td>145</td>
+                                            </tr>
+                                            <tr>
+                                                <td>2026-05-14 15:23</td>
+                                                <td><span style="color: #67c23a;">手动</span></td>
+                                                <td><span class="status-badge status-success">成功</span></td>
+                                                <td>892</td>
+                                            </tr>
+                                            <tr>
+                                                <td>2026-05-14 06:00</td>
+                                                <td><span style="color: #409eff;">定时</span></td>
+                                                <td><span class="status-badge status-success">成功</span></td>
+                                                <td>156</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- Add Mini Program Modal -->
-    <div class="modal-overlay" id="addModal" style="display: none;">
-        <div class="modal">
-            <h3 class="modal-title">添加小程序</h3>
-            
-            <div class="form-group">
-                <label class="form-label">小程序名称</label>
-                <input type="text" class="form-input" placeholder="例如：我的小程序">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">AppID</label>
-                <input type="text" class="form-input" placeholder="wx">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">AppSecret</label>
-                <input type="password" class="form-input" placeholder="请输入 AppSecret">
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
-                <button class="btn btn-primary">确认添加</button>
             </div>
         </div>
-    </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            Copyright © 2026 - present 微信广告数据管理系统 版权所有
+        </footer>
+    </main>
 
     <script>
-        function openAddModal() {
-            document.getElementById('addModal').style.display = 'flex';
-        }
+        function switchPage(page) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
 
-        function closeModal() {
-            document.getElementById('addModal').style.display = 'none';
+            // Update breadcrumb
+            const titles = {
+                'dashboard': '仪表盘',
+                'mini-programs': '小程序管理',
+                'fetch': '数据拉取',
+                'database': '数据库配置'
+            };
+            document.getElementById('breadcrumb-current').innerHTML = '<span>' + titles[page] + '</span>';
+
+            // Show/hide pages
+            document.getElementById('dashboard-page').style.display = 'none';
+            document.getElementById('mini-programs-page').style.display = 'none';
+            document.getElementById('fetch-page').style.display = 'none';
+            document.getElementById(page + '-page').style.display = 'block';
         }
 
         function startFetch() {
-            const progressContainer = document.getElementById('progressContainer');
-            progressContainer.style.display = 'block';
+            document.getElementById('progressSection').classList.add('show');
         }
 
         // Checkbox interactions
         document.querySelectorAll('.checkbox-item').forEach(item => {
-            item.addEventListener('click', function() {
+            item.addEventListener('click', function(e) {
                 const checkbox = this.querySelector('input');
-                checkbox.checked = !checkbox.checked;
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
                 this.classList.toggle('checked', checkbox.checked);
             });
         });
