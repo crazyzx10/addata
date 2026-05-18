@@ -545,6 +545,17 @@ async function logFetch(connection, program, fetchType, fetchDate, status, total
 }
 
 async function getLatestDataDate(connection, tableName, dateColumn, appid) {
+    // 白名单验证：只允许指定的表名和列名
+    const allowedTables = {
+        'publisher_adpos_general': '日期',
+        'publisher_adunit_general': '日期'
+    };
+    
+    if (!allowedTables[tableName] || allowedTables[tableName] !== dateColumn) {
+        console.log(`警告: 不允许的表名或列名 ${tableName}.${dateColumn}，使用起始日期`);
+        return CONFIG.START_DATE;
+    }
+    
     try {
         const [rows] = await connection.execute(`
             SELECT MAX(${dateColumn}) as latest_date FROM ${tableName} WHERE 小程序ID = ?
