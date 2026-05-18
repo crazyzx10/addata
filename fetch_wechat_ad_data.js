@@ -522,6 +522,17 @@ async function saveSettlementData(connection, program, data) {
             总已结算收入分, 总已结算收入元, 总罚金分, 总罚金元,
             微信云开发总预估收入分, 微信云开发总已结算收入分, 微信云开发总罚金分, 数据拉取日期)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
+        ON DUPLICATE KEY UPDATE
+            总预估收入分 = VALUES(总预估收入分),
+            总预估收入元 = VALUES(总预估收入元),
+            总已结算收入分 = VALUES(总已结算收入分),
+            总已结算收入元 = VALUES(总已结算收入元),
+            总罚金分 = VALUES(总罚金分),
+            总罚金元 = VALUES(总罚金元),
+            微信云开发总预估收入分 = VALUES(微信云开发总预估收入分),
+            微信云开发总已结算收入分 = VALUES(微信云开发总已结算收入分),
+            微信云开发总罚金分 = VALUES(微信云开发总罚金分),
+            创建时间 = CURRENT_TIMESTAMP
     `, [
         program.name,
         program.appid,
