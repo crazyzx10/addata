@@ -146,6 +146,20 @@ function fmtDateOnly(dateVal) {
     return fmtDate(new Date(dateVal));
 }
 
+function formatDuration(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+        return `${hours} 小时 ${minutes % 60} 分钟`;
+    } else if (minutes > 0) {
+        return `${minutes} 分钟 ${seconds % 60} 秒`;
+    } else {
+        return `${seconds} 秒`;
+    }
+}
+
 async function getToken(appid, appsecret) {
     const now = Date.now();
     const cache = tokenCaches.get(appid);
@@ -651,6 +665,7 @@ async function getLatestDataDate(connection, tableName, dateColumn, appid) {
 }
 
 async function fetchProgramData(connection, program) {
+    const programStartTime = Date.now();
     console.log(`\n====== 处理小程序: ${program.name} (${program.appid}) ======`);
 
     try {
@@ -730,7 +745,9 @@ async function fetchProgramData(connection, program) {
             await logFetch(connection, program, 'publisher_settlement', today, 'failed', 0, err.message);
         }
 
+        const programDuration = Date.now() - programStartTime;
         console.log(`\n====== ${program.name} 数据拉取完成 ======`);
+        console.log(`耗时: ${formatDuration(programDuration)}`);
 
     } catch (err) {
         console.error(`\n====== ${program.name} 拉取出错 ======`);
@@ -741,6 +758,7 @@ async function fetchProgramData(connection, program) {
 }
 
 async function main() {
+    const mainStartTime = Date.now();
     console.log('========== 微信小程序广告数据拉取开始 ==========');
     console.log(`开始时间: ${new Date().toLocaleString()}`);
     console.log(`起始日期: ${CONFIG.START_DATE}`);
@@ -756,8 +774,10 @@ async function main() {
             await fetchProgramData(connection, program);
         }
 
+        const mainDuration = Date.now() - mainStartTime;
         console.log('\n========== 全部数据拉取完成 ==========');
         console.log(`完成时间: ${new Date().toLocaleString()}`);
+        console.log(`总耗时: ${formatDuration(mainDuration)}`);
 
     } catch (err) {
         console.error('\n========== 拉取过程出错 ==========');
