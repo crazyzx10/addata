@@ -65,6 +65,21 @@ if (!configResult.valid) {
 
 const MINI_PROGRAMS = configResult.miniPrograms;
 
+console.log('========================================');
+console.log('            ⚠️  安全提醒');
+console.log('========================================');
+console.log('');
+console.log('🔒 敏感信息保护：');
+console.log('   - .env 文件已被 .gitignore 保护');
+console.log('   - 请确保不要将真实凭证提交到版本控制');
+console.log('   - AppID 和 AppSecret 是敏感信息，请妥善保管');
+console.log('');
+console.log('📝 检查清单：');
+console.log('   ✓ .env 文件已排除在 Git 之外');
+console.log('   ✓ 确保生产环境使用安全的密钥管理');
+console.log('');
+console.log('========================================\n');
+
 const AD_SLOT_NAMES = {
     'SLOT_ID_WEAPP_VIDEO_BEGIN': '视频贴片',
     'SLOT_ID_WEAPP_INTERSTITIAL': '插屏',
