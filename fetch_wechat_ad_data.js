@@ -228,12 +228,6 @@ function getMonthRange(startDate, endDate) {
 }
 
 async function initDatabase(connection) {
-    await connection.execute(`DROP TABLE IF EXISTS fetch_log`);
-    await connection.execute(`DROP TABLE IF EXISTS publisher_settlement`);
-    await connection.execute(`DROP TABLE IF EXISTS publisher_adunit_general`);
-    await connection.execute(`DROP TABLE IF EXISTS publisher_adpos_general`);
-    await connection.execute(`DROP TABLE IF EXISTS adunit_list`);
-    await connection.execute(`DROP TABLE IF EXISTS mini_program`);
 
     await connection.execute(`
         CREATE TABLE IF NOT EXISTS mini_program (
