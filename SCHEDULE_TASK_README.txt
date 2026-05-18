@@ -12,15 +12,16 @@
 4. 触发器：每天早上 9:00 执行
 5. 操作：启动程序
    - 程序：`cmd.exe`
-   - 参数：`/c "e:\ZZX\Projects\addata\run_fetch.bat"`
-   - 起始位置：`e:\ZZX\Projects\addata`
+   - 参数：`/c "你的项目路径\run_fetch.bat"`（例如：`/c "D:\Projects\wechat-ad-data\run_fetch.bat"`）
+   - 起始位置：`你的项目路径`（例如：`D:\Projects\wechat-ad-data`）
 
 ### 方法二：使用命令创建计划任务
 
-以管理员权限运行PowerShell，执行以下命令：
+以管理员权限运行PowerShell，先进入项目目录，然后执行以下命令：
 
 ```powershell
-$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument '/c "e:\ZZX\Projects\addata\run_fetch.bat"' -WorkingDirectory "e:\ZZX\Projects\addata"
+$scriptPath = Get-Location
+$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$scriptPath\run_fetch.bat`"" -WorkingDirectory $scriptPath
 $trigger = New-ScheduledTaskTrigger -Daily -At "09:00"
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName "微信广告数据每日拉取" -Action $action -Trigger $trigger -Settings $settings -Description "每天自动拉取微信小程序广告数据"
