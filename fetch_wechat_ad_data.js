@@ -14,21 +14,56 @@ const CONFIG = {
     START_DATE: process.env.START_DATE
 };
 
-function getMiniPrograms() {
-    const programs = [];
+function validateConfig() {
+    const errors = [];
+    
+    if (!CONFIG.DB.host) errors.push('❌ 缺少数据库主机配置 (DB_HOST)');
+    if (!CONFIG.DB.port || isNaN(CONFIG.DB.port)) errors.push('❌ 缺少或无效的数据库端口配置 (DB_PORT)');
+    if (!CONFIG.DB.user) errors.push('❌ 缺少数据库用户名配置 (DB_USER)');
+    if (!CONFIG.DB.password) errors.push('❌ 缺少数据库密码配置 (DB_PASSWORD)');
+    if (!CONFIG.DB.database) errors.push('❌ 缺少数据库名配置 (DB_DATABASE)');
+    if (!CONFIG.API_BASE) errors.push('❌ 缺少 API 地址配置 (API_BASE)');
+    if (!CONFIG.START_DATE) errors.push('❌ 缺少起始日期配置 (START_DATE)');
+    
+    const miniPrograms = [];
     let index = 1;
     while (process.env[`MINI_PROGRAM_${index}_NAME`]) {
-        programs.push({
+        miniPrograms.push({
             name: process.env[`MINI_PROGRAM_${index}_NAME`],
             appid: process.env[`MINI_PROGRAM_${index}_APPID`],
             appsecret: process.env[`MINI_PROGRAM_${index}_APPSECRET`]
         });
         index++;
     }
-    return programs;
+    
+    if (miniPrograms.length === 0) {
+        errors.push('❌ 缺少小程序配置，请在 .env 文件中配置至少一个 MINI_PROGRAM');
+    } else {
+        for (let i = 0; i < miniPrograms.length; i++) {
+            const program = miniPrograms[i];
+            if (!program.name) errors.push(`❌ 小程序 ${i + 1} 缺少名称配置 (MINI_PROGRAM_${i + 1}_NAME)`);
+            if (!program.appid) errors.push(`❌ 小程序 ${i + 1} 缺少 AppID 配置 (MINI_PROGRAM_${i + 1}_APPID)`);
+            if (!program.appsecret) errors.push(`❌ 小程序 ${i + 1} 缺少 AppSecret 配置 (MINI_PROGRAM_${i + 1}_APPSECRET)`);
+        }
+    }
+    
+    return { valid: errors.length === 0, errors, miniPrograms };
 }
 
-const MINI_PROGRAMS = getMiniPrograms();
+const configResult = validateConfig();
+if (!configResult.valid) {
+    console.log('\n========================================');
+    console.log('            配置验证失败');
+    console.log('========================================');
+    console.log('');
+    configResult.errors.forEach(error => console.log(error));
+    console.log('');
+    console.log('请检查并完善 .env 文件中的配置');
+    console.log('========================================\n');
+    process.exit(1);
+}
+
+const MINI_PROGRAMS = configResult.miniPrograms;
 
 const AD_SLOT_NAMES = {
     'SLOT_ID_WEAPP_VIDEO_BEGIN': '视频贴片',
