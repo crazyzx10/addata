@@ -96,6 +96,22 @@ const AD_STATUS_NAMES = {
 
 const tokenCaches = new Map();
 
+function cleanExpiredTokens() {
+    const now = Date.now();
+    let cleanedCount = 0;
+    tokenCaches.forEach((cache, key) => {
+        if (now >= cache.expireTime) {
+            tokenCaches.delete(key);
+            cleanedCount++;
+        }
+    });
+    if (cleanedCount > 0) {
+        console.log(`[Token缓存] 已清理 ${cleanedCount} 个过期缓存`);
+    }
+}
+
+setInterval(cleanExpiredTokens, 5 * 60 * 1000);
+
 function httpGet(url) {
     return new Promise((resolve, reject) => {
         const req = https.get(url, res => {
@@ -136,6 +152,8 @@ async function getToken(appid, appsecret) {
     if (cache && now < cache.expireTime - 300000) {
         return cache.token;
     }
+
+    cleanExpiredTokens();
 
     const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${appsecret}`;
     console.log(`正在获取 ${appid} 的 access_token...`);
