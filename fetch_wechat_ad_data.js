@@ -56,7 +56,7 @@ if (!configResult.valid) {
     console.log('            配置验证失败');
     console.log('========================================');
     console.log('');
-    configResult.errors.forEach(error => console.log(error));
+    configResult.errors.forEach(error => console.error(error));
     console.log('');
     console.log('请检查并完善 .env 文件中的配置');
     console.log('========================================\n');
@@ -645,7 +645,7 @@ async function getLatestDataDate(connection, tableName, dateColumn, appid) {
             return fmtDate(latest);
         }
     } catch (err) {
-        console.log(`查询最新日期失败: ${err.message}`);
+        console.error(`查询最新日期失败: ${err.message}`);
     }
     return CONFIG.START_DATE;
 }
@@ -687,7 +687,7 @@ async function fetchProgramData(connection, program) {
                 }
                 await sleep(500);
             } catch (err) {
-                console.log(`  ${range.start} ~ ${range.end}: 拉取失败 - ${err.message}`);
+                console.error(`  ${range.start} ~ ${range.end}: 拉取失败 - ${err.message}`);
             }
         }
         await logFetch(connection, program, 'publisher_adpos_general', today, 'success', totalSummaryCount, null);
@@ -711,7 +711,7 @@ async function fetchProgramData(connection, program) {
                 }
                 await sleep(500);
             } catch (err) {
-                console.log(`  ${range.start} ~ ${range.end}: 拉取失败 - ${err.message}`);
+                console.error(`  ${range.start} ~ ${range.end}: 拉取失败 - ${err.message}`);
             }
         }
         await logFetch(connection, program, 'publisher_adunit_general', today, 'success', totalDetailCount, null);
@@ -726,7 +726,7 @@ async function fetchProgramData(connection, program) {
             console.log(`  总预估收入: ${fenToYuan(settlement.revenue_all).toFixed(2)} 元`);
             console.log(`  总已结算收入: ${fenToYuan(settlement.settled_revenue_all).toFixed(2)} 元`);
         } catch (err) {
-            console.log(`结算数据拉取失败: ${err.message}`);
+            console.error(`结算数据拉取失败: ${err.message}`);
             await logFetch(connection, program, 'publisher_settlement', today, 'failed', 0, err.message);
         }
 
