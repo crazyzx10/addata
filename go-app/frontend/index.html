@@ -377,8 +377,8 @@
             </h1>
             <div class="tabs">
                 <button class="tab active" data-tab="database">数据库</button>
-                <button class="tab" data-tab="basic">基础配置</button>
                 <button class="tab" data-tab="programs">小程序</button>
+                <button class="tab" data-tab="basic">基础配置</button>
                 <button class="tab" data-tab="logs">执行日志</button>
             </div>
         </div>
@@ -432,16 +432,13 @@
                 <div class="card-title">⚙️ 基础配置</div>
                 <div class="form-group">
                     <label>API 地址 🔒</label>
-                    <input type="text" id="api-url" value="https://api.weixin.qq.com/publisher/stat" disabled>
+                    <input type="text" value="https://api.weixin.qq.com/publisher/stat" disabled>
                     <p style="font-size: 12px; color: #64748b; margin-top: 5px;">微信广告API官方地址，不可修改</p>
                 </div>
                 <div class="form-group">
-                    <label>起始日期</label>
-                    <input type="date" id="start-date" value="2025-07-01">
-                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">首次拉取数据的开始日期</p>
-                </div>
-                <div class="button-group">
-                    <button class="btn btn-secondary" id="save-basic">保存配置</button>
+                    <label>起始日期 🔒</label>
+                    <input type="date" id="start-date" value="2025-07-01" disabled>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">数据拉取起始日期，不可修改</p>
                 </div>
             </div>
         </div>
@@ -541,7 +538,6 @@
                 document.getElementById('db-name').value = config.database?.database || '';
                 document.getElementById('db-user').value = config.database?.user || '';
                 document.getElementById('db-password').value = config.database?.password || '';
-                document.getElementById('start-date').value = config.settings?.startDate || '2025-07-01';
 
                 miniPrograms = config.miniPrograms || [];
                 renderMiniPrograms();
@@ -630,26 +626,6 @@
                     user: document.getElementById('db-user').value,
                     password: document.getElementById('db-password').value,
                     database: document.getElementById('db-name').value
-                }
-            };
-
-            try {
-                await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(config)
-                });
-                alert('配置已保存');
-            } catch (err) {
-                alert('保存失败');
-            }
-        });
-
-        // 保存基础配置
-        document.getElementById('save-basic').addEventListener('click', async () => {
-            const config = {
-                settings: {
-                    startDate: document.getElementById('start-date').value
                 }
             };
 
