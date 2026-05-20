@@ -477,7 +477,7 @@
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="btn btn-secondary" id="clear-logs">清空日志</button>
                     <div style="display: flex; gap: 10px; margin-left: auto;">
-                        <button class="btn btn-secondary" id="stop-execution" style="display: none;">中断执行</button>
+                        <button class="btn btn-secondary" id="stop-execution" disabled>中断执行</button>
                         <button class="btn btn-primary" id="start-execution">开始执行</button>
                     </div>
                 </div>
@@ -747,8 +747,8 @@
             logContainer.innerHTML = '<div class="log-info">> 正在加载配置...</div>';
 
             abortController = new AbortController();
-            startBtn.style.display = 'none';
-            stopBtn.style.display = 'inline-block';
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
 
             try {
                 const response = await fetch('/api/execute', { 
@@ -790,8 +790,8 @@
                     logContainer.appendChild(div);
                 }
             } finally {
-                startBtn.style.display = 'inline-block';
-                stopBtn.style.display = 'none';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
                 abortController = null;
             }
         });
