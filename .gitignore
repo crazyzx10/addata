@@ -3,7 +3,7 @@ node_modules/
 *.log
 .DS_Store
 # Go 编译产物
-*.exe
-*.exe~
-go-app/*.exe
+# *.exe
+# *.exe~
+# go-app/*.exe
 go-app/frontend_original.html
