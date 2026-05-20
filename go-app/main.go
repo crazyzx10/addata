@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -209,37 +210,52 @@ func getToken(appID, secret string) (string, error) {
 
 func initDatabase(db *sql.DB) error {
 	tables := []string{
-		`CREATE TABLE IF NOT EXISTS wechat_ad_summary (
+		`CREATE TABLE IF NOT EXISTS publisher_adunit_general (
 			id INT AUTO_INCREMENT PRIMARY KEY,
 			mini_program_name VARCHAR(255) NOT NULL,
-			date DATE NOT NULL,
-			ad_slot_id VARCHAR(100),
-			ad_slot_name VARCHAR(255),
-			ad_slot_type VARCHAR(100),
-			total_request_count INT,
-			total_served_count INT,
-			total_click_count INT,
-			total_revenue DECIMAL(10,4),
-			total_ecpm DECIMAL(10,4),
-			total_impression_rate DECIMAL(10,4),
-			total_click_rate DECIMAL(10,4),
+			stat_date VARCHAR(8) NOT NULL,
+			adslot_id VARCHAR(100),
+			adslot_name VARCHAR(255),
+			adslot_type VARCHAR(100),
+			req_cnt INT,
+			show_cnt INT,
+			click_cnt INT,
+			revenue DECIMAL(10,4),
+			ecpm DECIMAL(10,4),
+			show_rate DECIMAL(10,4),
+			click_rate DECIMAL(10,4),
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			INDEX idx_date (date),
+			INDEX idx_stat_date (stat_date),
 			INDEX idx_mini_program (mini_program_name),
-			UNIQUE KEY unique_summary (mini_program_name, date, ad_slot_id)
+			UNIQUE KEY unique_summary (mini_program_name, stat_date, adslot_id)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
-		`CREATE TABLE IF NOT EXISTS wechat_ad_unit_list (
+		`CREATE TABLE IF NOT EXISTS publisher_adpos_general (
 			id INT AUTO_INCREMENT PRIMARY KEY,
 			mini_program_name VARCHAR(255) NOT NULL,
-			ad_slot_id VARCHAR(100) NOT NULL,
-			ad_slot_name VARCHAR(255),
-			ad_slot_type VARCHAR(100),
+			adslot_id VARCHAR(100),
+			adpos_id VARCHAR(100),
+			adpos_name VARCHAR(255),
+			req_cnt INT,
+			show_cnt INT,
+			click_cnt INT,
+			revenue DECIMAL(10,4),
+			stat_date VARCHAR(8) NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			INDEX idx_mini_program (mini_program_name),
-			INDEX idx_ad_slot_id (ad_slot_id),
-			UNIQUE KEY unique_unit (mini_program_name, ad_slot_id)
+			INDEX idx_stat_date (stat_date),
+			UNIQUE KEY unique_adpos (mini_program_name, stat_date, adslot_id, adpos_id)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+		`CREATE TABLE IF NOT EXISTS publisher_settlement (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			mini_program_name VARCHAR(255) NOT NULL,
+			settle_date VARCHAR(8) NOT NULL,
+			settle_amount DECIMAL(12,4),
+			tax_amount DECIMAL(12,4),
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			INDEX idx_settle_date (settle_date),
+			UNIQUE KEY unique_settle (mini_program_name, settle_date)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 	}
 
@@ -266,9 +282,9 @@ func syncAdUnitList(db *sql.DB, miniProgramName, accessToken string, logChan cha
 		Errcode   int `json:"errcode"`
 		Errmsg    string `json:"errmsg"`
 		AdunitList []struct {
-			AdSlotId   string `json:"adslot_id"`
-			AdSlotName string `json:"adslot_name"`
-			AdSlotType string `json:"adslot_type"`
+			AdslotId   string `json:"adslot_id"`
+			AdslotName string `json:"adslot_name"`
+			AdslotType string `json:"adslot_type"`
 		} `json:"data"`
 	}
 
@@ -280,17 +296,6 @@ func syncAdUnitList(db *sql.DB, miniProgramName, accessToken string, logChan cha
 		return fmt.Errorf("微信API错误: %s", result.Errmsg)
 	}
 
-	for _, unit := range result.AdunitList {
-		_, err := db.Exec(`INSERT INTO wechat_ad_unit_list 
-			(mini_program_name, ad_slot_id, ad_slot_name, ad_slot_type)
-			VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE 
-			ad_slot_name=VALUES(ad_slot_name), ad_slot_type=VALUES(ad_slot_type)`,
-			miniProgramName, unit.AdSlotId, unit.AdSlotName, unit.AdSlotType)
-		if err != nil {
-			logChan <- fmt.Sprintf("❌ [%s] 保存广告位 %s 失败: %v", miniProgramName, unit.AdSlotId, err)
-		}
-	}
-
 	logChan <- fmt.Sprintf("✅ [%s] 广告位列表同步完成，共 %d 个广告位", miniProgramName, len(result.AdunitList))
 	return nil
 }
@@ -298,8 +303,11 @@ func syncAdUnitList(db *sql.DB, miniProgramName, accessToken string, logChan cha
 func syncSummaryData(db *sql.DB, miniProgramName, accessToken, startDate, endDate string, logChan chan<- string) error {
 	logChan <- fmt.Sprintf("✅ [%s] 正在获取 %s 至 %s 的数据...", miniProgramName, startDate, endDate)
 	
+	startDateFormatted := strings.ReplaceAll(startDate, "-", "")
+	endDateFormatted := strings.ReplaceAll(endDate, "-", "")
+	
 	apiURL := fmt.Sprintf("https://api.weixin.qq.com/publisher/stat?action=get_summary&access_token=%s&begin_date=%s&end_date=%s",
-		accessToken, startDate, endDate)
+		accessToken, startDateFormatted, endDateFormatted)
 	resp, err := http.Get(apiURL)
 	if err != nil {
 		return fmt.Errorf("获取汇总数据失败: %v", err)
@@ -311,9 +319,9 @@ func syncSummaryData(db *sql.DB, miniProgramName, accessToken, startDate, endDat
 		Errmsg  string `json:"errmsg"`
 		Data    []struct {
 			StatDate    string  `json:"stat_date"`
-			AdSlotId    string  `json:"adslot_id"`
-			AdSlotName  string  `json:"adslot_name"`
-			AdSlotType  string  `json:"adslot_type"`
+			AdslotId    string  `json:"adslot_id"`
+			AdslotName  string  `json:"adslot_name"`
+			AdslotType  string  `json:"adslot_type"`
 			ReqCnt      int     `json:"req_cnt"`
 			ShowCnt     int     `json:"show_cnt"`
 			ClickCnt    int     `json:"click_cnt"`
@@ -333,21 +341,14 @@ func syncSummaryData(db *sql.DB, miniProgramName, accessToken, startDate, endDat
 	}
 
 	for _, item := range result.Data {
-		_, err := db.Exec(`INSERT INTO wechat_ad_summary 
-			(mini_program_name, date, ad_slot_id, ad_slot_name, ad_slot_type,
-			total_request_count, total_served_count, total_click_count,
-			total_revenue, total_ecpm, total_impression_rate, total_click_rate)
+		_, err := db.Exec(`INSERT INTO publisher_adunit_general 
+			(mini_program_name, stat_date, adslot_id, adslot_name, adslot_type,
+			req_cnt, show_cnt, click_cnt, revenue, ecpm, show_rate, click_rate)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE 
-			total_request_count=VALUES(total_request_count), 
-			total_served_count=VALUES(total_served_count),
-			total_click_count=VALUES(total_click_count),
-			total_revenue=VALUES(total_revenue),
-			total_ecpm=VALUES(total_ecpm),
-			total_impression_rate=VALUES(total_impression_rate),
-			total_click_rate=VALUES(total_click_rate)`,
-			miniProgramName, item.StatDate, item.AdSlotId, item.AdSlotName, item.AdSlotType,
-			item.ReqCnt, item.ShowCnt, item.ClickCnt,
-			item.Revenue, item.Ecpm, item.ShowRate, item.ClickRate)
+			req_cnt=VALUES(req_cnt), show_cnt=VALUES(show_cnt), click_cnt=VALUES(click_cnt),
+			revenue=VALUES(revenue), ecpm=VALUES(ecpm), show_rate=VALUES(show_rate), click_rate=VALUES(click_rate)`,
+			miniProgramName, item.StatDate, item.AdslotId, item.AdslotName, item.AdslotType,
+			item.ReqCnt, item.ShowCnt, item.ClickCnt, item.Revenue, item.Ecpm, item.ShowRate, item.ClickRate)
 		if err != nil {
 			logChan <- fmt.Sprintf("❌ [%s] 保存数据 %s 失败: %v", miniProgramName, item.StatDate, err)
 		}
