@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>微信广告数据管理工具</title>
+    <title>微信广告数据配置工具</title>
     <style>
         * {
             margin: 0;
@@ -13,180 +13,251 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e0e0e0;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .header {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #00d4ff;
-            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .header h1::before {
+            content: '📊 ';
         }
 
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #2a2a4a;
+            gap: 8px;
         }
 
         .tab {
-            padding: 12px 24px;
-            background: #252545;
-            border: none;
-            color: #b0b0b0;
+            padding: 10px 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            color: #94a3b8;
             cursor: pointer;
-            border-radius: 8px 8px 0 0;
+            border-radius: 8px;
             transition: all 0.3s;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 500;
         }
 
         .tab:hover {
-            background: #2a2a5a;
-            color: #fff;
+            background: rgba(59, 130, 246, 0.1);
+            color: #cbd5e1;
         }
 
         .tab.active {
-            background: #00d4ff;
-            color: #1a1a2e;
-            font-weight: bold;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .content {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .tab-content {
-            display: none;
-            background: rgba(37, 37, 69, 0.9);
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.3s ease-in-out;
         }
 
-        .tab-content.active {
-            display: block;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .section {
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f1f5f9;
             margin-bottom: 25px;
-        }
-
-        .section h2 {
-            color: #00d4ff;
-            margin-bottom: 15px;
-            font-size: 20px;
-            border-left: 4px solid #00d4ff;
-            padding-left: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .form-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 6px;
-            color: #c0c0c0;
-            font-size: 14px;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
         }
 
         input {
             width: 100%;
-            padding: 12px;
-            background: #1a1a2e;
-            border: 1px solid #3a3a5a;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.5);
             border-radius: 8px;
-            color: #fff;
+            color: #e2e8f0;
             font-size: 14px;
             transition: all 0.3s;
         }
 
         input:focus {
             outline: none;
-            border-color: #00d4ff;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
+        input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        button {
+        .btn {
             padding: 12px 24px;
-            background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
             border: none;
             border-radius: 8px;
-            color: #1a1a2e;
-            font-size: 15px;
-            font-weight: bold;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
         }
 
-        button:hover {
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
         }
 
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.5);
+            color: #cbd5e1;
+            border: 1px solid rgba(71, 85, 105, 0.5);
         }
 
-        button.secondary {
-            background: linear-gradient(135deg, #2a2a5a 0%, #252545 100%);
-            color: #00d4ff;
-            border: 1px solid #00d4ff;
+        .btn-secondary:hover {
+            background: rgba(71, 85, 105, 0.7);
         }
 
-        button.danger {
-            background: linear-gradient(135deg, #ff4757 0%, #cc0000 100%);
-            color: #fff;
+        .status {
+            margin-top: 15px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .status.success {
+            background: rgba(22, 163, 74, 0.1);
+            border: 1px solid rgba(22, 163, 74, 0.3);
+            color: #22c55e;
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .status.pending {
+            background: rgba(250, 204, 21, 0.1);
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            color: #facc15;
         }
 
         .mini-program-list {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
 
         .mini-program-card {
-            background: #1a1a2e;
-            border: 1px solid #3a3a5a;
-            border-radius: 10px;
-            padding: 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 12px;
+            padding: 18px;
         }
 
-        .card-header {
+        .mini-program-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
-        .card-title {
-            color: #00d4ff;
-            font-size: 18px;
-            font-weight: bold;
+        .mini-program-name {
+            font-weight: 600;
+            color: #f1f5f9;
+            font-size: 15px;
+        }
+
+        .mini-program-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            background: rgba(51, 65, 85, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            border-radius: 6px;
+            color: #cbd5e1;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: rgba(71, 85, 105, 0.7);
+        }
+
+        .mini-program-detail {
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .mini-program-detail span {
+            color: #94a3b8;
+            font-weight: 500;
         }
 
         .log-container {
-            background: #0f0f1e;
-            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 12px;
             padding: 20px;
             height: 400px;
             overflow-y: auto;
@@ -195,368 +266,504 @@
             line-height: 1.6;
         }
 
-        .log-line {
-            margin-bottom: 5px;
-            padding: 3px 0;
+        .log-info {
+            color: #94a3b8;
+            margin-bottom: 4px;
         }
 
-        .log-line.success {
-            color: #00ff88;
+        .log-success {
+            color: #22c55e;
+            margin-bottom: 4px;
         }
 
-        .log-line.error {
-            color: #ff4757;
+        .log-error {
+            color: #ef4444;
+            margin-bottom: 4px;
         }
 
-        .log-line.info {
-            color: #00d4ff;
+        .log-warning {
+            color: #facc15;
+            margin-bottom: 4px;
         }
 
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         }
 
-        .status-badge.completed {
-            background: #00ff88;
-            color: #1a1a2e;
+        .modal {
+            background: rgba(30, 41, 59, 0.98);
+            border-radius: 16px;
+            padding: 25px;
+            width: 90%;
+            max-width: 450px;
+            border: 1px solid rgba(51, 65, 85, 0.5);
         }
 
-        .status-badge.pending {
-            background: #ffa502;
-            color: #1a1a2e;
-        }
-
-        .add-form {
-            background: #1a1a2e;
-            border: 2px dashed #3a3a5a;
-            border-radius: 10px;
-            padding: 20px;
+        .modal h3 {
+            font-size: 18px;
             margin-bottom: 20px;
         }
 
-        .message {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: none;
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
         }
 
-        .message.success {
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid #00ff88;
-            color: #00ff88;
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
         }
 
-        .message.error {
-            background: rgba(255, 71, 87, 0.1);
-            border: 1px solid #ff4757;
-            color: #ff4757;
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 微信广告数据管理工具</h1>
-
+    <div class="header">
+        <h1>微信广告数据配置工具</h1>
         <div class="tabs">
-            <button class="tab active" data-tab="database">数据库配置</button>
-            <button class="tab" data-tab="mini-program">小程序管理</button>
-            <button class="tab" data-tab="execute">数据拉取</button>
+            <button class="tab active" data-tab="database">数据库</button>
+            <button class="tab" data-tab="basic">基础配置</button>
+            <button class="tab" data-tab="programs">小程序</button>
+            <button class="tab" data-tab="logs">执行日志</button>
         </div>
+    </div>
 
-        <div id="database" class="tab-content active">
-            <div id="dbMessage" class="message"></div>
-            <div class="section">
-                <h2>数据库连接配置</h2>
+    <div class="content">
+        <!-- 数据库配置 -->
+        <div id="tab-database" class="tab-content">
+            <div class="card">
+                <div class="card-title">📦 数据库配置</div>
+                <div class="form-group">
+                    <label>主机地址</label>
+                    <input type="text" id="db-host" placeholder="localhost">
+                </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>主机地址</label>
-                        <input type="text" id="dbHost" placeholder="localhost">
+                        <label>端口号</label>
+                        <input type="text" id="db-port" placeholder="3306">
                     </div>
                     <div class="form-group">
-                        <label>端口</label>
-                        <input type="text" id="dbPort" placeholder="3306">
+                        <label>数据库名</label>
+                        <input type="text" id="db-name" placeholder="ad_data">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>用户名</label>
-                        <input type="text" id="dbUser" placeholder="root">
+                        <input type="text" id="db-user" placeholder="root">
                     </div>
                     <div class="form-group">
                         <label>密码</label>
-                        <input type="password" id="dbPassword" placeholder="password">
+                        <input type="password" id="db-password" placeholder="请输入密码">
                     </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" id="test-connection">测试连接</button>
+                    <button class="btn btn-secondary" id="save-database">保存配置</button>
+                </div>
+                <div class="status pending" id="connection-status">
+                    📊 连接状态: ⚪ 未测试
+                </div>
+            </div>
+        </div>
+
+        <!-- 基础配置 -->
+        <div id="tab-basic" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-title">⚙️ 基础配置</div>
+                <div class="form-group">
+                    <label>API 地址 🔒</label>
+                    <input type="text" id="api-url" value="https://api.weixin.qq.com/publisher/stat" disabled>
+                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">微信广告API官方地址，不可修改</p>
                 </div>
                 <div class="form-group">
-                    <label>数据库名</label>
-                    <input type="text" id="dbName" placeholder="wechat_ad">
+                    <label>起始日期</label>
+                    <input type="date" id="start-date" value="2025-01-01">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">首次拉取数据的开始日期</p>
                 </div>
                 <div class="button-group">
-                    <button onclick="testConnection()">测试连接</button>
-                    <button onclick="saveDatabaseConfig()">保存配置</button>
+                    <button class="btn btn-secondary" id="save-basic">保存配置</button>
                 </div>
             </div>
         </div>
 
-        <div id="mini-program" class="tab-content">
-            <div id="mpMessage" class="message"></div>
-            <div class="section">
-                <h2>添加小程序</h2>
-                <div class="add-form">
-                    <div class="form-group">
-                        <label>小程序名称</label>
-                        <input type="text" id="mpName" placeholder="我的小程序">
-                    </div>
-                    <div class="form-group">
-                        <label>AppID</label>
-                        <input type="text" id="mpAppId" placeholder="wx1234567890abcdef">
-                    </div>
-                    <div class="form-group">
-                        <label>Secret</label>
-                        <input type="password" id="mpSecret" placeholder="app secret">
-                    </div>
-                    <button onclick="addMiniProgram()">添加小程序</button>
+        <!-- 小程序管理 -->
+        <div id="tab-programs" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-title">📱 小程序管理</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <span style="color: #94a3b8;">已配置 <span id="program-count" style="color: #3b82f6; font-weight: 600;">0</span> 个小程序</span>
+                    <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" id="add-program-btn">+ 添加小程序</button>
                 </div>
-
-                <h2>小程序列表</h2>
-                <div id="miniProgramList" class="mini-program-list"></div>
+                <div class="mini-program-list" id="program-list">
+                    <!-- 小程序列表会动态生成 -->
+                </div>
+                <button class="btn btn-secondary" id="save-programs" style="margin-top: 15px; width: 100%;">保存配置</button>
             </div>
         </div>
 
-        <div id="execute" class="tab-content">
-            <div class="section">
-                <h2>拉取数据</h2>
-                <div class="button-group">
-                    <button id="executeBtn" onclick="executeFetch()">开始拉取</button>
-                    <button class="secondary" onclick="clearLog()">清空日志</button>
+        <!-- 执行日志 -->
+        <div id="tab-logs" class="tab-content" style="display: none;">
+            <div class="card">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                    <button class="action-btn" id="export-config">导出配置</button>
+                    <button class="action-btn" id="import-config">导入配置</button>
                 </div>
-                <div style="margin-top: 20px;">
-                    <h3 style="color: #00d4ff; margin-bottom: 10px;">执行日志</h3>
-                    <div id="logContainer" class="log-container">
-                        <div class="log-line">等待执行...</div>
-                    </div>
+                <div class="card-title">📜 执行日志</div>
+                <div class="log-container" id="log-container">
+                    <div class="log-info">> 等待执行...</div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn btn-secondary" id="clear-logs">清空日志</button>
+                    <button class="btn btn-primary" id="start-execution" style="margin-left: auto;">开始执行</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 添加小程序弹窗 -->
+    <div class="modal-overlay" id="modal-overlay" style="display: none;">
+        <div class="modal">
+            <h3 id="modal-title">添加小程序</h3>
+            <div class="form-group">
+                <label>小程序名称</label>
+                <input type="text" id="new-program-name" placeholder="请输入小程序名称">
+            </div>
+            <div class="form-group">
+                <label>AppID</label>
+                <input type="text" id="new-program-appid" placeholder="wxXXXXXXXXXXXXXXXX">
+            </div>
+            <div class="form-group">
+                <label>AppSecret</label>
+                <input type="text" id="new-program-secret" placeholder="请输入 AppSecret">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-modal">取消</button>
+                <button class="btn btn-primary" id="confirm-modal">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="import-file" accept=".json" style="display: none;">
+
     <script>
-        let config = {
-            database: {},
-            miniPrograms: []
-        };
+        let miniPrograms = [];
+        let editingIndex = -1;
 
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById(tab.dataset.tab).classList.add('active');
-            });
-        });
-
+        // 加载配置
         async function loadConfig() {
             try {
-                const res = await fetch('/api/config');
-                config = await res.json();
-                renderConfig();
-            } catch (e) {
-                console.error(e);
+                const response = await fetch('/api/config');
+                const config = await response.json();
+
+                document.getElementById('db-host').value = config.database?.host || '';
+                document.getElementById('db-port').value = config.database?.port || '3306';
+                document.getElementById('db-name').value = config.database?.database || '';
+                document.getElementById('db-user').value = config.database?.user || '';
+                document.getElementById('db-password').value = config.database?.password || '';
+                document.getElementById('start-date').value = config.settings?.startDate || '2025-01-01';
+
+                miniPrograms = config.miniPrograms || [];
+                renderMiniPrograms();
+            } catch (err) {
+                console.log('首次运行，使用默认配置');
             }
         }
 
-        function renderConfig() {
-            if (config.database) {
-                document.getElementById('dbHost').value = config.database.host || '';
-                document.getElementById('dbPort').value = config.database.port || '';
-                document.getElementById('dbUser').value = config.database.user || '';
-                document.getElementById('dbPassword').value = config.database.password || '';
-                document.getElementById('dbName').value = config.database.dbName || '';
-            }
-            renderMiniPrograms();
-        }
-
+        // 渲染小程序列表
         function renderMiniPrograms() {
-            const list = document.getElementById('miniProgramList');
-            if (!config.miniPrograms || config.miniPrograms.length === 0) {
-                list.innerHTML = '<div style="text-align:center; color:#888; padding:40px;">暂无小程序</div>';
+            const list = document.getElementById('program-list');
+            const count = document.getElementById('program-count');
+            count.textContent = miniPrograms.length;
+
+            if (miniPrograms.length === 0) {
+                list.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px;">暂无配置的小程序，点击上方按钮添加</div>';
                 return;
             }
-            list.innerHTML = config.miniPrograms.map((mp, index) => `
+
+            list.innerHTML = miniPrograms.map((program, index) => `
                 <div class="mini-program-card">
-                    <div class="card-header">
-                        <span class="card-title">${mp.name}</span>
-                        <div style="display: flex; gap:10px; align-items: center;">
-                            <span class="status-badge ${mp.firstPullComplete ? 'completed' : 'pending'}">
-                                ${mp.firstPullComplete ? '已完成首次拉取' : '待首次拉取'}
-                            </span>
-                            <button class="danger" onclick="deleteMiniProgram(${index})">删除</button>
+                    <div class="mini-program-header">
+                        <span class="mini-program-name">${index + 1}️⃣ ${program.name}</span>
+                        <div class="mini-program-actions">
+                            <button class="action-btn" style="padding: 5px 10px;" onclick="editProgram(${index})">编辑</button>
+                            <button class="action-btn" style="padding: 5px 10px;" onclick="deleteProgram(${index})">删除</button>
                         </div>
                     </div>
-                    <div style="color:#888; font-size:13px;">
-                        <p><strong>AppID:</strong> ${mp.appId}</p>
-                    </div>
+                    <div class="mini-program-detail"><span>AppID:</span> ${program.appid}</div>
+                    <div class="mini-program-detail"><span>AppSecret:</span> ${'*'.repeat(program.appsecret?.length || 10)}</div>
                 </div>
             `).join('');
         }
 
-        function showMessage(el, type, text) {
-            el.textContent = text;
-            el.className = 'message ' + type;
-            el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 3000);
-        }
+        // 标签页切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                tab.classList.add('active');
+                document.getElementById(`tab-${tab.dataset.tab}`).style.display = 'block';
+            });
+        });
 
-        async function testConnection() {
-            const dbConfig = {
-                database: {
-                    host: document.getElementById('dbHost').value,
-                    port: document.getElementById('dbPort').value,
-                    user: document.getElementById('dbUser').value,
-                    password: document.getElementById('dbPassword').value,
-                    dbName: document.getElementById('dbName').value
-                }
-            };
-            try {
-                const res = await fetch('/api/test-connection', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(dbConfig)
-                });
-                if (res.ok) {
-                    showMessage(document.getElementById('dbMessage'), 'success', '连接成功！');
-                } else {
-                    const err = await res.text();
-                    showMessage(document.getElementById('dbMessage'), 'error', '连接失败：' + err);
-                }
-            } catch (e) {
-                showMessage(document.getElementById('dbMessage'), 'error', '请求失败：' + e.message);
-            }
-        }
+        // 测试连接
+        document.getElementById('test-connection').addEventListener('click', async () => {
+            const status = document.getElementById('connection-status');
+            status.className = 'status pending';
+            status.textContent = '📊 连接状态: 🔄 正在连接...';
 
-        async function saveDatabaseConfig() {
-            config.database = {
-                host: document.getElementById('dbHost').value,
-                port: document.getElementById('dbPort').value,
-                user: document.getElementById('dbUser').value,
-                password: document.getElementById('dbPassword').value,
-                dbName: document.getElementById('dbName').value
+            const config = {
+                host: document.getElementById('db-host').value,
+                port: parseInt(document.getElementById('db-port').value) || 3306,
+                user: document.getElementById('db-user').value,
+                password: document.getElementById('db-password').value,
+                database: document.getElementById('db-name').value
             };
+
             try {
-                const res = await fetch('/api/config', {
+                const response = await fetch('/api/test-connection', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
                 });
-                if (res.ok) {
-                    showMessage(document.getElementById('dbMessage'), 'success', '保存成功！');
-                }
-            } catch (e) {
-                showMessage(document.getElementById('dbMessage'), 'error', '保存失败：' + e.message);
-            }
-        }
+                const result = await response.json();
 
-        async function addMiniProgram() {
-            const name = document.getElementById('mpName').value;
-            const appId = document.getElementById('mpAppId').value;
-            const secret = document.getElementById('mpSecret').value;
-            if (!name || !appId || !secret) {
-                showMessage(document.getElementById('mpMessage'), 'error', '请填写完整信息');
+                if (result.success) {
+                    status.className = 'status success';
+                    status.textContent = '📊 连接状态: ✅ 连接成功';
+                } else {
+                    status.className = 'status error';
+                    status.textContent = '📊 连接状态: ❌ ' + result.message;
+                }
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = '📊 连接状态: ❌ 连接失败';
+            }
+        });
+
+        // 保存数据库配置
+        document.getElementById('save-database').addEventListener('click', async () => {
+            const config = {
+                database: {
+                    host: document.getElementById('db-host').value,
+                    port: parseInt(document.getElementById('db-port').value) || 3306,
+                    user: document.getElementById('db-user').value,
+                    password: document.getElementById('db-password').value,
+                    database: document.getElementById('db-name').value
+                }
+            };
+
+            try {
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                alert('配置已保存');
+            } catch (err) {
+                alert('保存失败');
+            }
+        });
+
+        // 保存基础配置
+        document.getElementById('save-basic').addEventListener('click', async () => {
+            const config = {
+                settings: {
+                    startDate: document.getElementById('start-date').value
+                }
+            };
+
+            try {
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                alert('配置已保存');
+            } catch (err) {
+                alert('保存失败');
+            }
+        });
+
+        // 保存小程序配置
+        document.getElementById('save-programs').addEventListener('click', async () => {
+            try {
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ miniPrograms })
+                });
+                alert('配置已保存');
+            } catch (err) {
+                alert('保存失败');
+            }
+        });
+
+        // 添加/编辑小程序
+        document.getElementById('add-program-btn').addEventListener('click', () => {
+            editingIndex = -1;
+            document.getElementById('modal-title').textContent = '添加小程序';
+            document.getElementById('new-program-name').value = '';
+            document.getElementById('new-program-appid').value = '';
+            document.getElementById('new-program-secret').value = '';
+            document.getElementById('modal-overlay').style.display = 'flex';
+        });
+
+        window.editProgram = function(index) {
+            editingIndex = index;
+            const program = miniPrograms[index];
+            document.getElementById('modal-title').textContent = '编辑小程序';
+            document.getElementById('new-program-name').value = program.name;
+            document.getElementById('new-program-appid').value = program.appid;
+            document.getElementById('new-program-secret').value = program.appsecret;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        };
+
+        window.deleteProgram = function(index) {
+            if (confirm('确定要删除这个小程序吗？')) {
+                miniPrograms.splice(index, 1);
+                renderMiniPrograms();
+            }
+        };
+
+        document.getElementById('cancel-modal').addEventListener('click', () => {
+            document.getElementById('modal-overlay').style.display = 'none';
+        });
+
+        document.getElementById('confirm-modal').addEventListener('click', () => {
+            const name = document.getElementById('new-program-name').value.trim();
+            const appid = document.getElementById('new-program-appid').value.trim();
+            const appsecret = document.getElementById('new-program-secret').value.trim();
+
+            if (!name || !appid || !appsecret) {
+                alert('请填写完整信息');
                 return;
             }
-            config.miniPrograms.push({
-                name,
-                appId,
-                secret,
-                firstPullComplete: false
-            });
-            try {
-                const res = await fetch('/api/config', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(config)
-                });
-                if (res.ok) {
-                    document.getElementById('mpName').value = '';
-                    document.getElementById('mpAppId').value = '';
-                    document.getElementById('mpSecret').value = '';
-                    renderMiniPrograms();
-                    showMessage(document.getElementById('mpMessage'), 'success', '添加成功！');
-                }
-            } catch (e) {
-                showMessage(document.getElementById('mpMessage'), 'error', '添加失败：' + e.message);
+
+            const program = { name, appid, appsecret };
+
+            if (editingIndex >= 0) {
+                miniPrograms[editingIndex] = program;
+            } else {
+                miniPrograms.push(program);
             }
-        }
 
-        async function deleteMiniProgram(index) {
-            if (!confirm('确定删除该小程序吗？')) return;
-            config.miniPrograms.splice(index, 1);
-            try {
-                const res = await fetch('/api/config', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(config)
-                });
-                if (res.ok) {
-                    renderMiniPrograms();
-                    showMessage(document.getElementById('mpMessage'), 'success', '删除成功！');
-                }
-            } catch (e) {
-                showMessage(document.getElementById('mpMessage'), 'error', '删除失败：' + e.message);
-            }
-        }
+            renderMiniPrograms();
+            document.getElementById('modal-overlay').style.display = 'none';
+        });
 
-        async function executeFetch() {
-            const btn = document.getElementById('executeBtn');
-            btn.disabled = true;
-            btn.textContent = '执行中...';
+        // 清空日志
+        document.getElementById('clear-logs').addEventListener('click', () => {
+            document.getElementById('log-container').innerHTML = '<div class="log-info">> 等待执行...</div>';
+        });
 
-            const logContainer = document.getElementById('logContainer');
-            logContainer.innerHTML = '';
+        // 开始执行
+        document.getElementById('start-execution').addEventListener('click', async () => {
+            const logContainer = document.getElementById('log-container');
+            logContainer.innerHTML = '<div class="log-info">> 正在加载配置...</div>';
 
             try {
-                const eventSource = new EventSource('/api/execute');
-                eventSource.onmessage = (e) => {
-                    const line = document.createElement('div');
-                    const msg = e.data;
-                    line.className = 'log-line';
-                    if (msg.includes('成功') || msg.includes('完成')) {
-                        line.className += ' success';
-                    } else if (msg.includes('失败') || msg.includes('错误')) {
-                        line.className += ' error';
-                    } else {
-                        line.className += ' info';
-                    }
-                    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-                    logContainer.appendChild(line);
+                const response = await fetch('/api/execute', { method: 'POST' });
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const text = decoder.decode(value);
+                    const lines = text.split('\n').filter(line => line.trim());
+
+                    lines.forEach(line => {
+                        const div = document.createElement('div');
+                        if (line.includes('✅')) div.className = 'log-success';
+                        else if (line.includes('❌') || line.includes('错误')) div.className = 'log-error';
+                        else if (line.includes('⚠️')) div.className = 'log-warning';
+                        else div.className = 'log-info';
+                        div.textContent = line;
+                        logContainer.appendChild(div);
+                    });
+
                     logContainer.scrollTop = logContainer.scrollHeight;
-                    if (msg === 'DONE') {
-                        eventSource.close();
-                        btn.disabled = false;
-                        btn.textContent = '开始拉取';
-                    }
-                };
-                eventSource.onerror = () => {
-                    eventSource.close();
-                    btn.disabled = false;
-                    btn.textContent = '开始拉取';
-                };
-            } catch (e) {
-                btn.disabled = false;
-                btn.textContent = '开始拉取';
+                }
+            } catch (err) {
+                const div = document.createElement('div');
+                div.className = 'log-error';
+                div.textContent = '❌ 执行失败: ' + err.message;
+                logContainer.appendChild(div);
             }
-        }
+        });
 
-        function clearLog() {
-            document.getElementById('logContainer').innerHTML = '<div class="log-line">等待执行...</div>';
-        }
+        // 导出配置
+        document.getElementById('export-config').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
 
+                const dataStr = JSON.stringify(config, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'config.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert('导出失败');
+            }
+        });
+
+        // 导入配置
+        document.getElementById('import-config').addEventListener('click', () => {
+            document.getElementById('import-file').click();
+        });
+
+        document.getElementById('import-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const config = JSON.parse(event.target.result);
+
+                    await fetch('/api/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(config)
+                    });
+
+                    alert('配置已导入，请刷新页面查看');
+                    location.reload();
+                } catch (err) {
+                    alert('导入失败：无效的配置文件');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // 初始化
         loadConfig();
     </script>
 </body>
 </html>
-
