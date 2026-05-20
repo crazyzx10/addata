@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -52,12 +53,12 @@ var (
 )
 
 func init() {
-	if runtime.GOOS == "windows" {
-		configPath = filepath.Join(os.Getenv("APPDATA"), "WechatAdConfig", "config.json")
-	} else {
-		home, _ := os.UserHomeDir()
-		configPath = filepath.Join(home, ".wechatadconfig", "config.json")
+	exePath, err := os.Executable()
+	if err != nil {
+		exePath = os.Args[0]
 	}
+	exeDir := filepath.Dir(exePath)
+	configPath = filepath.Join(exeDir, ".env")
 }
 
 func loadConfig() (Config, error) {
@@ -68,31 +69,119 @@ func loadConfig() (Config, error) {
 			// 返回默认配置
 			return Config{
 				Database: DatabaseConfig{
-					Host: "localhost",
+					Host: "",
 					Port: 3306,
-					User: "root",
-					Database: "ad_data",
+					User: "",
+					Password: "",
+					Database: "",
 				},
 				Settings: SettingsConfig{
-					StartDate: "2025-07-01",
+					StartDate: "",
+					APIBase:   "https://api.weixin.qq.com/publisher/stat",
 				},
 				MiniPrograms: []MiniProgramConfig{},
 			}, nil
 		}
 		return cfg, err
 	}
-	err = json.Unmarshal(data, &cfg)
-	return cfg, err
+
+	// 解析.env文件
+	lines := strings.Split(string(data), "\n")
+	kvMap := make(map[string]string)
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		eqIdx := strings.Index(line, "=")
+		if eqIdx == -1 {
+			continue
+		}
+		key := strings.TrimSpace(line[:eqIdx])
+		value := strings.TrimSpace(line[eqIdx+1:])
+		value = strings.Trim(value, "\"'")
+		kvMap[key] = value
+	}
+
+	// 解析数据库配置
+	cfg.Database.Host = kvMap["DB_HOST"]
+	if portStr, ok := kvMap["DB_PORT"]; ok {
+		fmt.Sscanf(portStr, "%d", &cfg.Database.Port)
+	}
+	if cfg.Database.Port == 0 {
+		cfg.Database.Port = 3306
+	}
+	cfg.Database.User = kvMap["DB_USER"]
+	cfg.Database.Password = kvMap["DB_PASSWORD"]
+	cfg.Database.Database = kvMap["DB_DATABASE"]
+
+	// 解析基础配置
+	cfg.Settings.APIBase = kvMap["API_BASE"]
+	if cfg.Settings.APIBase == "" {
+		cfg.Settings.APIBase = "https://api.weixin.qq.com/publisher/stat"
+	}
+	cfg.Settings.StartDate = kvMap["START_DATE"]
+
+	// 解析小程序配置
+	var miniPrograms []MiniProgramConfig
+	for i := 1; ; i++ {
+		nameKey := fmt.Sprintf("MINI_PROGRAM_%d_NAME", i)
+		appidKey := fmt.Sprintf("MINI_PROGRAM_%d_APPID", i)
+		secretKey := fmt.Sprintf("MINI_PROGRAM_%d_APPSECRET", i)
+
+		name, hasName := kvMap[nameKey]
+		appid, hasAppid := kvMap[appidKey]
+		secret, hasSecret := kvMap[secretKey]
+
+		if !hasName || !hasAppid || !hasSecret {
+			break
+		}
+
+		miniPrograms = append(miniPrograms, MiniProgramConfig{
+			Name:     name,
+			AppID:    appid,
+			AppSecret: secret,
+		})
+	}
+	cfg.MiniPrograms = miniPrograms
+
+	return cfg, nil
 }
 
 func saveConfig(cfg Config) error {
-	dir := filepath.Dir(configPath)
-	os.MkdirAll(dir, 0755)
-	data, err := json.MarshalIndent(cfg, "", "  ")
-	if err != nil {
-		return err
+	var lines []string
+
+	// 添加数据库配置
+	lines = append(lines, "# Database Configuration")
+	lines = append(lines, fmt.Sprintf("DB_HOST=%s", cfg.Database.Host))
+	lines = append(lines, fmt.Sprintf("DB_PORT=%d", cfg.Database.Port))
+	lines = append(lines, fmt.Sprintf("DB_USER=%s", cfg.Database.User))
+	lines = append(lines, fmt.Sprintf("DB_PASSWORD=%s", cfg.Database.Password))
+	lines = append(lines, fmt.Sprintf("DB_DATABASE=%s", cfg.Database.Database))
+	lines = append(lines, "")
+
+	// 添加基础配置
+	lines = append(lines, "# API Configuration")
+	lines = append(lines, fmt.Sprintf("API_BASE=%s", cfg.Settings.APIBase))
+	lines = append(lines, fmt.Sprintf("START_DATE=%s", cfg.Settings.StartDate))
+	lines = append(lines, "")
+
+	// 添加小程序配置
+	lines = append(lines, "# Mini Programs")
+	for i, mp := range cfg.MiniPrograms {
+		idx := i + 1
+		lines = append(lines, fmt.Sprintf("MINI_PROGRAM_%d_NAME=%s", idx, mp.Name))
+		lines = append(lines, fmt.Sprintf("MINI_PROGRAM_%d_APPID=%s", idx, mp.AppID))
+		lines = append(lines, fmt.Sprintf("MINI_PROGRAM_%d_APPSECRET=%s", idx, mp.AppSecret))
+		if i < len(cfg.MiniPrograms)-1 {
+			lines = append(lines, "")
+		}
 	}
-	return os.WriteFile(configPath, data, 0644)
+
+	// 写入文件
+	data := strings.Join(lines, "\n")
+	return os.WriteFile(configPath, []byte(data), 0644)
 }
 
 func getDBConnection(cfg Config) (*sql.DB, error) {

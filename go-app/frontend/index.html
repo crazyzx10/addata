@@ -431,9 +431,9 @@
             <div class="card">
                 <div class="card-title">⚙️ 基础配置</div>
                 <div class="form-group">
-                    <label>API 地址 🔒</label>
-                    <input type="text" id="api-url" value="https://api.weixin.qq.com/publisher/stat" disabled>
-                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">微信广告API官方地址，不可修改</p>
+                    <label>API 地址</label>
+                    <input type="text" id="api-url" value="https://api.weixin.qq.com/publisher/stat">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 5px;">微信广告API地址</p>
                 </div>
                 <div class="form-group">
                     <label>起始日期</label>
@@ -541,7 +541,8 @@
                 document.getElementById('db-name').value = config.database?.database || '';
                 document.getElementById('db-user').value = config.database?.user || '';
                 document.getElementById('db-password').value = config.database?.password || '';
-                document.getElementById('start-date').value = config.settings?.startDate || '2025-01-01';
+                document.getElementById('api-url').value = config.settings?.apiBase || 'https://api.weixin.qq.com/publisher/stat';
+                document.getElementById('start-date').value = config.settings?.startDate || '';
 
                 miniPrograms = config.miniPrograms || [];
                 renderMiniPrograms();
@@ -649,6 +650,7 @@
         document.getElementById('save-basic').addEventListener('click', async () => {
             const config = {
                 settings: {
+                    apiBase: document.getElementById('api-url').value,
                     startDate: document.getElementById('start-date').value
                 }
             };
