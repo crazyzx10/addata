@@ -278,13 +278,24 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
 
+	ctx := r.Context()
+
 	// 创建日志通道
 	logChan := make(chan string, 100)
+	doneChan := make(chan struct{})
 
 	go func() {
 		defer close(logChan)
-		
+		defer close(doneChan)
+
 		logChan <- "📊 开始执行数据拉取任务..."
+
+		select {
+		case <-ctx.Done():
+			logChan <- "⚠️ 任务已中断"
+			return
+		default:
+		}
 
 		cfg, err := loadConfig()
 		if err != nil {
@@ -324,6 +335,13 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for i, mp := range cfg.MiniPrograms {
+			select {
+			case <-ctx.Done():
+				logChan <- "⚠️ 任务已中断"
+				return
+			default:
+			}
+
 			logChan <- fmt.Sprintf("📱 正在处理小程序 %s (%d/%d)...", mp.Name, i+1, len(cfg.MiniPrograms))
 
 			logChan <- fmt.Sprintf("🔑 [%s] 正在获取 Access Token...", mp.Name)
@@ -355,10 +373,18 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// 实时发送日志
-	for msg := range logChan {
-		fmt.Fprintf(w, "%s\n", msg)
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
+	for {
+		select {
+		case msg, ok := <-logChan:
+			if !ok {
+				return
+			}
+			fmt.Fprintf(w, "%s\n", msg)
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+		case <-ctx.Done():
+			return
 		}
 	}
 }

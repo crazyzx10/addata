@@ -466,7 +466,7 @@
         <!-- 执行日志 -->
         <div id="tab-logs" class="tab-content" style="display: none;">
             <div class="card">
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 20px; gap: 10px;">
                     <button class="action-btn" id="export-config">导出配置</button>
                     <button class="action-btn" id="import-config">导入配置</button>
                 </div>
@@ -476,7 +476,10 @@
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                     <button class="btn btn-secondary" id="clear-logs">清空日志</button>
-                    <button class="btn btn-primary" id="start-execution" style="margin-left: auto;">开始执行</button>
+                    <div style="display: flex; gap: 10px; margin-left: auto;">
+                        <button class="btn btn-secondary" id="stop-execution" style="display: none;">中断执行</button>
+                        <button class="btn btn-primary" id="start-execution">开始执行</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -729,6 +732,8 @@
             document.getElementById('modal-overlay').style.display = 'none';
         });
 
+        let abortController = null;
+
         // 清空日志
         document.getElementById('clear-logs').addEventListener('click', () => {
             document.getElementById('log-container').innerHTML = '<div class="log-info">> 等待执行...</div>';
@@ -737,10 +742,19 @@
         // 开始执行
         document.getElementById('start-execution').addEventListener('click', async () => {
             const logContainer = document.getElementById('log-container');
+            const startBtn = document.getElementById('start-execution');
+            const stopBtn = document.getElementById('stop-execution');
             logContainer.innerHTML = '<div class="log-info">> 正在加载配置...</div>';
 
+            abortController = new AbortController();
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+
             try {
-                const response = await fetch('/api/execute', { method: 'POST' });
+                const response = await fetch('/api/execute', { 
+                    method: 'POST',
+                    signal: abortController.signal
+                });
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
 
@@ -764,9 +778,32 @@
                     logContainer.scrollTop = logContainer.scrollHeight;
                 }
             } catch (err) {
+                if (err.name === 'AbortError') {
+                    const div = document.createElement('div');
+                    div.className = 'log-warning';
+                    div.textContent = '⚠️ 执行已中断';
+                    logContainer.appendChild(div);
+                } else {
+                    const div = document.createElement('div');
+                    div.className = 'log-error';
+                    div.textContent = '❌ 执行失败: ' + err.message;
+                    logContainer.appendChild(div);
+                }
+            } finally {
+                startBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'none';
+                abortController = null;
+            }
+        });
+
+        // 中断执行
+        document.getElementById('stop-execution').addEventListener('click', () => {
+            if (abortController) {
+                abortController.abort();
+                const logContainer = document.getElementById('log-container');
                 const div = document.createElement('div');
-                div.className = 'log-error';
-                div.textContent = '❌ 执行失败: ' + err.message;
+                div.className = 'log-warning';
+                div.textContent = '⚠️ 正在中断执行...';
                 logContainer.appendChild(div);
             }
         });
