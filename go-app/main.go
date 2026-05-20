@@ -257,24 +257,25 @@ func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 	oldCfg, _ := loadConfig()
 
-	// 合并配置
+	// 合并数据库配置
 	if newCfg.Database.Host == "" {
 		newCfg.Database = oldCfg.Database
 	} else {
 		if newCfg.Database.Port == 0 {
-			newCfg.Database.Port = oldCfg.Database.Port
-			if newCfg.Database.Port == 0 {
-				newCfg.Database.Port = 3306
-			}
+			newCfg.Database.Port = 3306
 		}
 	}
 
+	// 合并小程序配置
 	if len(newCfg.MiniPrograms) == 0 {
 		newCfg.MiniPrograms = oldCfg.MiniPrograms
 	}
 
-	if newCfg.Settings.StartDate == "" {
-		newCfg.Settings = oldCfg.Settings
+	// 基础配置（起始日期硬编码为2025-07-01）
+	newCfg.Settings.StartDate = "2025-07-01"
+	newCfg.Settings.APIBase = oldCfg.Settings.APIBase
+	if newCfg.Settings.APIBase == "" {
+		newCfg.Settings.APIBase = "https://api.weixin.qq.com/publisher/stat"
 	}
 
 	if err := saveConfig(newCfg); err != nil {
