@@ -1037,17 +1037,29 @@ func logFetch(db *sql.DB, name, appid, fetchType, fetchDate, status string, tota
 func getLatestDataDate(db *sql.DB, tableName, dateColumn, appid string, defaultDate string) string {
 	var latestDate string
 	err := db.QueryRow(fmt.Sprintf(`SELECT MAX(%s) as latest_date FROM %s WHERE 小程序ID = ?`, dateColumn, tableName), appid).Scan(&latestDate)
-	if err != nil || latestDate == "" {
+	
+	if err != nil {
+		fmt.Printf("DEBUG: getLatestDataDate error for appid=%s, table=%s: %v\n", appid, tableName, err)
 		return defaultDate
 	}
 	
+	if latestDate == "" {
+		fmt.Printf("DEBUG: getLatestDataDate no data found for appid=%s, table=%s, using default=%s\n", appid, tableName, defaultDate)
+		return defaultDate
+	}
+	
+	fmt.Printf("DEBUG: getLatestDataDate found latest date=%s for appid=%s, table=%s\n", latestDate, appid, tableName)
+	
 	d, err := time.Parse("2006-01-02", latestDate)
 	if err != nil {
+		fmt.Printf("DEBUG: getLatestDataDate parse error for date=%s: %v\n", latestDate, err)
 		return defaultDate
 	}
 	
 	d = d.AddDate(0, 0, 1)
-	return d.Format("2006-01-02")
+	result := d.Format("2006-01-02")
+	fmt.Printf("DEBUG: getLatestDataDate returning %s (next day after %s)\n", result, latestDate)
+	return result
 }
 
 func syncAdUnitList(db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase string, logChan chan<- string) error {
@@ -1283,7 +1295,11 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 
 			logChan <- "\n----- 2. 拉取汇总数据 -----"
 			lastSummaryDate := getLatestDataDate(db, "publisher_adpos_general", "日期", mp.AppID, startDate)
-			logChan <- fmt.Sprintf("从 %s 开始拉取汇总数据...", lastSummaryDate)
+			if lastSummaryDate == startDate {
+				logChan <- fmt.Sprintf("📊 首次拉取汇总数据，从 %s 开始...", lastSummaryDate)
+			} else {
+				logChan <- fmt.Sprintf("📊 增量拉取汇总数据，从 %s 开始（已有数据至前一天）...", lastSummaryDate)
+			}
 			summaryCount, err := syncSummaryData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastSummaryDate, endDate, logChan)
 			if err != nil {
 				logChan <- fmt.Sprintf("❌ [%s] 同步汇总数据失败: %v", mp.Name, err)
@@ -1296,7 +1312,11 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 
 			logChan <- "\n----- 3. 拉取细分数据 -----"
 			lastDetailDate := getLatestDataDate(db, "publisher_adunit_general", "日期", mp.AppID, startDate)
-			logChan <- fmt.Sprintf("从 %s 开始拉取细分数据...", lastDetailDate)
+			if lastDetailDate == startDate {
+				logChan <- fmt.Sprintf("📊 首次拉取细分数据，从 %s 开始...", lastDetailDate)
+			} else {
+				logChan <- fmt.Sprintf("📊 增量拉取细分数据，从 %s 开始（已有数据至前一天）...", lastDetailDate)
+			}
 			detailCount, err := syncDetailData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastDetailDate, endDate, logChan)
 			if err != nil {
 				logChan <- fmt.Sprintf("❌ [%s] 同步细分数据失败: %v", mp.Name, err)
