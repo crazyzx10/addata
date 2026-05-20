@@ -139,6 +139,16 @@ func loadConfig() (Config, error) {
 			break
 		}
 
+		// 验证小程序配置完整性
+		name = strings.TrimSpace(name)
+		appid = strings.TrimSpace(appid)
+		secret = strings.TrimSpace(secret)
+
+		if name == "" || appid == "" || secret == "" {
+			log.Printf("[loadConfig] 跳过无效的小程序配置 (索引: %d)", i)
+			continue
+		}
+
 		miniPrograms = append(miniPrograms, MiniProgramConfig{
 			Name:     name,
 			AppID:    appid,
@@ -249,6 +259,32 @@ func getConfig(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(cfg)
 }
 
+func validateMiniProgramConfig(programs []MiniProgramConfig) ([]MiniProgramConfig, error) {
+	var validPrograms []MiniProgramConfig
+	for i, p := range programs {
+		name := strings.TrimSpace(p.Name)
+		appid := strings.TrimSpace(p.AppID)
+		secret := strings.TrimSpace(p.AppSecret)
+
+		if name == "" {
+			return nil, fmt.Errorf("第 %d 个小程序名称不能为空", i+1)
+		}
+		if appid == "" {
+			return nil, fmt.Errorf("第 %d 个小程序AppID不能为空", i+1)
+		}
+		if secret == "" {
+			return nil, fmt.Errorf("第 %d 个小程序AppSecret不能为空", i+1)
+		}
+
+		validPrograms = append(validPrograms, MiniProgramConfig{
+			Name:     name,
+			AppID:    appid,
+			AppSecret: secret,
+		})
+	}
+	return validPrograms, nil
+}
+
 func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
 	var newCfg Config
 	if err := json.NewDecoder(r.Body).Decode(&newCfg); err != nil {
@@ -267,9 +303,16 @@ func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 合并小程序配置
+	// 验证并合并小程序配置
 	if len(newCfg.MiniPrograms) == 0 {
 		newCfg.MiniPrograms = oldCfg.MiniPrograms
+	} else {
+		validPrograms, err := validateMiniProgramConfig(newCfg.MiniPrograms)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		newCfg.MiniPrograms = validPrograms
 	}
 
 	// 基础配置（起始日期硬编码为2025-07-01）

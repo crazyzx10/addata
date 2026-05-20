@@ -817,11 +817,31 @@
                 try {
                     const config = JSON.parse(event.target.result);
 
-                    await fetch('/api/config', {
+                    if (config.miniPrograms && config.miniPrograms.length > 0) {
+                        for (let i = 0; i < config.miniPrograms.length; i++) {
+                            const program = config.miniPrograms[i];
+                            if (!program.name || !program.appid || !program.appsecret) {
+                                alert(`导入失败：第 ${i + 1} 个小程序配置不完整，请检查名称、AppID和AppSecret`);
+                                return;
+                            }
+                            if (!program.name.trim() || !program.appid.trim() || !program.appsecret.trim()) {
+                                alert(`导入失败：第 ${i + 1} 个小程序配置存在空值，请检查`);
+                                return;
+                            }
+                        }
+                    }
+
+                    const response = await fetch('/api/config', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(config)
                     });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        alert('导入失败：' + errorText);
+                        return;
+                    }
 
                     alert('配置已导入，请刷新页面查看');
                     location.reload();
