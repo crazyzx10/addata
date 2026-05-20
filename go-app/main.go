@@ -1024,6 +1024,9 @@ func saveSettlementData(db *sql.DB, name, appid string, data map[string]interfac
 }
 
 func logFetch(db *sql.DB, name, appid, fetchType, fetchDate, status string, totalCount int, errorMessage string) error {
+	if fetchDate == "" {
+		fetchDate = time.Now().Format("2006-01-02")
+	}
 	_, err := db.Exec(`
 		INSERT INTO fetch_log (小程序名称, 小程序ID, 拉取类型, 拉取日期, 状态, 记录数, 错误信息)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
