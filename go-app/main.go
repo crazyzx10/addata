@@ -255,20 +255,105 @@ func initDatabase(db *sql.DB) error {
 func syncAdUnitList(db *sql.DB, miniProgramName, accessToken string, logChan chan<- string) error {
 	logChan <- fmt.Sprintf("✅ [%s] 正在获取广告位列表...", miniProgramName)
 	
-	// 这里实现从微信API获取广告位列表的逻辑
-	// 由于需要使用publisher/stat API，这里简化实现
-	logChan <- fmt.Sprintf("✅ [%s] 广告位列表同步完成", miniProgramName)
-	
+	apiURL := fmt.Sprintf("https://api.weixin.qq.com/publisher/stat?action=get_adunit_list&access_token=%s", accessToken)
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return fmt.Errorf("获取广告位列表失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Errcode   int `json:"errcode"`
+		Errmsg    string `json:"errmsg"`
+		AdunitList []struct {
+			AdSlotId   string `json:"adslot_id"`
+			AdSlotName string `json:"adslot_name"`
+			AdSlotType string `json:"adslot_type"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("解析广告位列表失败: %v", err)
+	}
+
+	if result.Errcode != 0 {
+		return fmt.Errorf("微信API错误: %s", result.Errmsg)
+	}
+
+	for _, unit := range result.AdunitList {
+		_, err := db.Exec(`INSERT INTO wechat_ad_unit_list 
+			(mini_program_name, ad_slot_id, ad_slot_name, ad_slot_type)
+			VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE 
+			ad_slot_name=VALUES(ad_slot_name), ad_slot_type=VALUES(ad_slot_type)`,
+			miniProgramName, unit.AdSlotId, unit.AdSlotName, unit.AdSlotType)
+		if err != nil {
+			logChan <- fmt.Sprintf("❌ [%s] 保存广告位 %s 失败: %v", miniProgramName, unit.AdSlotId, err)
+		}
+	}
+
+	logChan <- fmt.Sprintf("✅ [%s] 广告位列表同步完成，共 %d 个广告位", miniProgramName, len(result.AdunitList))
 	return nil
 }
 
 func syncSummaryData(db *sql.DB, miniProgramName, accessToken, startDate, endDate string, logChan chan<- string) error {
 	logChan <- fmt.Sprintf("✅ [%s] 正在获取 %s 至 %s 的数据...", miniProgramName, startDate, endDate)
 	
-	// 这里实现从微信API获取汇总数据的逻辑
-	// 使用 https://api.weixin.qq.com/publisher/stat API
-	logChan <- fmt.Sprintf("✅ [%s] 数据同步完成", miniProgramName)
-	
+	apiURL := fmt.Sprintf("https://api.weixin.qq.com/publisher/stat?action=get_summary&access_token=%s&begin_date=%s&end_date=%s",
+		accessToken, startDate, endDate)
+	resp, err := http.Get(apiURL)
+	if err != nil {
+		return fmt.Errorf("获取汇总数据失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Errcode int `json:"errcode"`
+		Errmsg  string `json:"errmsg"`
+		Data    []struct {
+			StatDate    string  `json:"stat_date"`
+			AdSlotId    string  `json:"adslot_id"`
+			AdSlotName  string  `json:"adslot_name"`
+			AdSlotType  string  `json:"adslot_type"`
+			ReqCnt      int     `json:"req_cnt"`
+			ShowCnt     int     `json:"show_cnt"`
+			ClickCnt    int     `json:"click_cnt"`
+			Revenue     float64 `json:"revenue"`
+			Ecpm        float64 `json:"ecpm"`
+			ShowRate    float64 `json:"show_rate"`
+			ClickRate   float64 `json:"click_rate"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return fmt.Errorf("解析汇总数据失败: %v", err)
+	}
+
+	if result.Errcode != 0 {
+		return fmt.Errorf("微信API错误: %s", result.Errmsg)
+	}
+
+	for _, item := range result.Data {
+		_, err := db.Exec(`INSERT INTO wechat_ad_summary 
+			(mini_program_name, date, ad_slot_id, ad_slot_name, ad_slot_type,
+			total_request_count, total_served_count, total_click_count,
+			total_revenue, total_ecpm, total_impression_rate, total_click_rate)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE 
+			total_request_count=VALUES(total_request_count), 
+			total_served_count=VALUES(total_served_count),
+			total_click_count=VALUES(total_click_count),
+			total_revenue=VALUES(total_revenue),
+			total_ecpm=VALUES(total_ecpm),
+			total_impression_rate=VALUES(total_impression_rate),
+			total_click_rate=VALUES(total_click_rate)`,
+			miniProgramName, item.StatDate, item.AdSlotId, item.AdSlotName, item.AdSlotType,
+			item.ReqCnt, item.ShowCnt, item.ClickCnt,
+			item.Revenue, item.Ecpm, item.ShowRate, item.ClickRate)
+		if err != nil {
+			logChan <- fmt.Sprintf("❌ [%s] 保存数据 %s 失败: %v", miniProgramName, item.StatDate, err)
+		}
+	}
+
+	logChan <- fmt.Sprintf("✅ [%s] 数据同步完成，共 %d 条记录", miniProgramName, len(result.Data))
 	return nil
 }
 
