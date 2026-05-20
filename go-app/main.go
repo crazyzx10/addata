@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -489,7 +490,7 @@ func fetchDataWithRetry(token, action, appid, appsecret, apiBase string, extraPa
 			return nil, fmt.Errorf("JSON解析失败: %v", err)
 		}
 		
-		if errcode, ok := result["errcode"].(float64); ok {
+		if errcode, ok := result["errcode"].(float64); ok && errcode != 0 {
 			if errcode == 40001 || errcode == 42001 {
 				if tokenRefreshCount >= maxTokenRefresh {
 					return nil, fmt.Errorf("Token刷新次数超过限制")
@@ -501,6 +502,13 @@ func fetchDataWithRetry(token, action, appid, appsecret, apiBase string, extraPa
 				tokenRefreshCount++
 				continue
 			}
+			errMsg := ""
+			if em, ok := result["err_msg"].(string); ok {
+				errMsg = em
+			} else if em, ok := result["errmsg"].(string); ok {
+				errMsg = em
+			}
+			return nil, fmt.Errorf("API错误 [%d]: %s", int(errcode), errMsg)
 		}
 		
 		if ret, ok := result["ret"].(float64); ok && ret != 0 {
@@ -1109,7 +1117,7 @@ func syncAdUnitList(db *sql.DB, miniProgramName, appid, appsecret, accessToken, 
 	return nil
 }
 
-func syncSummaryData(db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase, startDate, endDate string, logChan chan<- string) (int, error) {
+func syncSummaryData(ctx context.Context, db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase, startDate, endDate string, logChan chan<- string) (int, error) {
 	logChan <- fmt.Sprintf("✅ [%s] 正在获取 %s 至 %s 的汇总数据...", miniProgramName, startDate, endDate)
 	
 	ranges, err := getMonthRanges(startDate, endDate)
@@ -1119,6 +1127,12 @@ func syncSummaryData(db *sql.DB, miniProgramName, appid, appsecret, accessToken,
 	
 	totalCount := 0
 	for _, r := range ranges {
+		select {
+		case <-ctx.Done():
+			return totalCount, fmt.Errorf("任务已中断")
+		default:
+		}
+		
 		data, err := fetchAllPagesByDateRange(accessToken, "publisher_adpos_general", r["start"], r["end"], appid, appsecret, apiBase)
 		if err != nil {
 			logChan <- fmt.Sprintf("❌ [%s] %s ~ %s: 拉取失败 - %v", miniProgramName, r["start"], r["end"], err)
@@ -1142,7 +1156,7 @@ func syncSummaryData(db *sql.DB, miniProgramName, appid, appsecret, accessToken,
 	return totalCount, nil
 }
 
-func syncDetailData(db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase, startDate, endDate string, logChan chan<- string) (int, error) {
+func syncDetailData(ctx context.Context, db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase, startDate, endDate string, logChan chan<- string) (int, error) {
 	logChan <- fmt.Sprintf("✅ [%s] 正在获取 %s 至 %s 的细分数据...", miniProgramName, startDate, endDate)
 	
 	ranges, err := getMonthRanges(startDate, endDate)
@@ -1152,6 +1166,12 @@ func syncDetailData(db *sql.DB, miniProgramName, appid, appsecret, accessToken, 
 	
 	totalCount := 0
 	for _, r := range ranges {
+		select {
+		case <-ctx.Done():
+			return totalCount, fmt.Errorf("任务已中断")
+		default:
+		}
+		
 		data, err := fetchAllPagesByDateRange(accessToken, "publisher_adunit_general", r["start"], r["end"], appid, appsecret, apiBase)
 		if err != nil {
 			logChan <- fmt.Sprintf("❌ [%s] %s ~ %s: 拉取失败 - %v", miniProgramName, r["start"], r["end"], err)
@@ -1315,7 +1335,7 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			} else {
 				logChan <- fmt.Sprintf("📊 增量拉取汇总数据，从 %s 开始（已有数据至前一天）...", lastSummaryDate)
 			}
-			summaryCount, err := syncSummaryData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastSummaryDate, endDate, logChan)
+			summaryCount, err := syncSummaryData(ctx, db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastSummaryDate, endDate, logChan)
 			if err != nil {
 				logChan <- fmt.Sprintf("❌ [%s] 同步汇总数据失败: %v", mp.Name, err)
 			} else {
@@ -1332,7 +1352,7 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			} else {
 				logChan <- fmt.Sprintf("📊 增量拉取细分数据，从 %s 开始（已有数据至前一天）...", lastDetailDate)
 			}
-			detailCount, err := syncDetailData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastDetailDate, endDate, logChan)
+			detailCount, err := syncDetailData(ctx, db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastDetailDate, endDate, logChan)
 			if err != nil {
 				logChan <- fmt.Sprintf("❌ [%s] 同步细分数据失败: %v", mp.Name, err)
 			} else {
