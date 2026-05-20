@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 
@@ -37,6 +37,7 @@ type DatabaseConfig struct {
 
 type SettingsConfig struct {
 	StartDate string `json:"startDate"`
+	APIBase   string `json:"apiBase"`
 }
 
 type MiniProgramConfig struct {
@@ -210,53 +211,111 @@ func getToken(appID, secret string) (string, error) {
 
 func initDatabase(db *sql.DB) error {
 	tables := []string{
-		`CREATE TABLE IF NOT EXISTS publisher_adunit_general (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			mini_program_name VARCHAR(255) NOT NULL,
-			stat_date VARCHAR(8) NOT NULL,
-			adslot_id VARCHAR(100),
-			adslot_name VARCHAR(255),
-			adslot_type VARCHAR(100),
-			req_cnt INT,
-			show_cnt INT,
-			click_cnt INT,
-			revenue DECIMAL(10,4),
-			ecpm DECIMAL(10,4),
-			show_rate DECIMAL(10,4),
-			click_rate DECIMAL(10,4),
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			INDEX idx_stat_date (stat_date),
-			INDEX idx_mini_program (mini_program_name),
-			UNIQUE KEY unique_summary (mini_program_name, stat_date, adslot_id)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+		`CREATE TABLE IF NOT EXISTS mini_program (
+			名称 VARCHAR(64) NOT NULL COMMENT '小程序名称',
+			小程序ID VARCHAR(32) NOT NULL COMMENT '小程序AppID',
+			小程序Secret VARCHAR(64) NOT NULL COMMENT '小程序AppSecret',
+			是否启用 TINYINT DEFAULT 1 COMMENT '是否启用',
+			创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP,
+			更新时间 DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (小程序ID)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序配置表';`,
+		`CREATE TABLE IF NOT EXISTS adunit_list (
+			小程序名称 VARCHAR(64) NOT NULL COMMENT '小程序名称',
+			小程序ID VARCHAR(32) NOT NULL COMMENT '小程序AppID',
+			广告位唯一ID VARCHAR(64) NOT NULL COMMENT '广告位唯一ID',
+			广告位名称 VARCHAR(128) COMMENT '广告位名称',
+			广告位类型枚举 VARCHAR(64) COMMENT '广告位类型枚举',
+			广告位类型 VARCHAR(32) COMMENT '广告位类型中文名',
+			广告位类型值 VARCHAR(64) COMMENT '广告位类型',
+			状态 VARCHAR(32) COMMENT '状态：ON=正常，OFF=暂停',
+			状态名称 VARCHAR(16) COMMENT '状态中文名',
+			广告位数字ID VARCHAR(64) COMMENT '广告位数字ID',
+			广告尺寸 VARCHAR(128) COMMENT '广告尺寸',
+			是否允许可播放 TINYINT COMMENT '是否允许可播放',
+			视频最短时长 INT COMMENT '视频最短时长(秒)',
+			视频最长时长 INT COMMENT '视频最长时间(秒)',
+			模版类型列表 VARCHAR(256) COMMENT '模版类型列表',
+			创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP,
+			更新时间 DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			PRIMARY KEY (小程序名称, 小程序ID, 广告位唯一ID)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='广告位清单表';`,
 		`CREATE TABLE IF NOT EXISTS publisher_adpos_general (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			mini_program_name VARCHAR(255) NOT NULL,
-			adslot_id VARCHAR(100),
-			adpos_id VARCHAR(100),
-			adpos_name VARCHAR(255),
-			req_cnt INT,
-			show_cnt INT,
-			click_cnt INT,
-			revenue DECIMAL(10,4),
-			stat_date VARCHAR(8) NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			INDEX idx_stat_date (stat_date),
-			UNIQUE KEY unique_adpos (mini_program_name, stat_date, adslot_id, adpos_id)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+			小程序名称 VARCHAR(64) NOT NULL COMMENT '小程序名称',
+			小程序ID VARCHAR(32) NOT NULL COMMENT '小程序AppID',
+			日期 DATE NOT NULL COMMENT '日期',
+			广告位类型枚举 VARCHAR(64) COMMENT '广告位类型枚举',
+			广告位类型 VARCHAR(32) COMMENT '广告位类型中文名',
+			广告位数字ID VARCHAR(64) COMMENT '广告位数字ID',
+			成功请求次数 INT COMMENT '成功请求次数',
+			曝光量 INT COMMENT '曝光量',
+			曝光率 VARCHAR(10) COMMENT '曝光率(%)',
+			点击量 INT COMMENT '点击量',
+			点击率 VARCHAR(10) COMMENT '点击率(%)',
+			总收入分 INT COMMENT '总收入(分)',
+			总收入元 DECIMAL(12,2) COMMENT '总收入(元)',
+			千次曝光收入分 DECIMAL(10,2) COMMENT '千次曝光收入(分)',
+			千次曝光收入元 DECIMAL(10,2) COMMENT '千次曝光收入(元)',
+			创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (小程序名称, 小程序ID, 日期, 广告位数字ID),
+			KEY idx_appid_date (小程序ID, 日期)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='广告汇总数据表';`,
+		`CREATE TABLE IF NOT EXISTS publisher_adunit_general (
+			小程序名称 VARCHAR(64) NOT NULL COMMENT '小程序名称',
+			小程序ID VARCHAR(32) NOT NULL COMMENT '小程序AppID',
+			广告位唯一ID VARCHAR(64) NOT NULL COMMENT '广告位唯一ID',
+			广告位名称 VARCHAR(128) COMMENT '广告位名称',
+			日期 DATE NOT NULL COMMENT '日期',
+			广告位类型枚举 VARCHAR(64) COMMENT '广告位类型枚举',
+			广告位类型 VARCHAR(32) COMMENT '广告位类型中文名',
+			广告位数字ID VARCHAR(64) COMMENT '广告位数字ID',
+			成功请求次数 INT COMMENT '成功请求次数',
+			曝光量 INT COMMENT '曝光量',
+			曝光率 VARCHAR(10) COMMENT '曝光率(%)',
+			点击量 INT COMMENT '点击量',
+			点击率 VARCHAR(10) COMMENT '点击率(%)',
+			总收入分 INT COMMENT '总收入(分)',
+			总收入元 DECIMAL(12,2) COMMENT '总收入(元)',
+			流量主收入分 INT COMMENT '流量主收入(分)',
+			流量主收入元 DECIMAL(12,2) COMMENT '流量主收入(元)',
+			代理商收入分 INT COMMENT '代理商收入(分)',
+			千次曝光收入分 DECIMAL(10,2) COMMENT '千次曝光收入(分)',
+			千次曝光收入元 DECIMAL(10,2) COMMENT '千次曝光收入(元)',
+			是否智能广告 TINYINT COMMENT '是否智能广告',
+			父模版类型 VARCHAR(32) COMMENT '父模版类型',
+			创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (小程序名称, 小程序ID, 广告位唯一ID, 日期),
+			KEY idx_appid_date (小程序ID, 日期)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='广告细分数据表';`,
 		`CREATE TABLE IF NOT EXISTS publisher_settlement (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			mini_program_name VARCHAR(255) NOT NULL,
-			settle_date VARCHAR(8) NOT NULL,
-			settle_amount DECIMAL(12,4),
-			tax_amount DECIMAL(12,4),
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			INDEX idx_settle_date (settle_date),
-			UNIQUE KEY unique_settle (mini_program_name, settle_date)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
+			小程序名称 VARCHAR(64) NOT NULL COMMENT '小程序名称',
+			小程序ID VARCHAR(32) NOT NULL COMMENT '小程序AppID',
+			总预估收入分 BIGINT COMMENT '总预估收入(分)',
+			总预估收入元 DECIMAL(14,2) COMMENT '总预估收入(元)',
+			总已结算收入分 BIGINT COMMENT '总已结算收入(分)',
+			总已结算收入元 DECIMAL(14,2) COMMENT '总已结算收入(元)',
+			总罚金分 BIGINT COMMENT '总罚金(分)',
+			总罚金元 DECIMAL(14,2) COMMENT '总罚金(元)',
+			微信云开发总预估收入分 BIGINT COMMENT '微信云开发总预估收入(分)',
+			微信云开发总已结算收入分 BIGINT COMMENT '微信云开发总已结算收入(分)',
+			微信云开发总罚金分 BIGINT COMMENT '微信云开发总罚金(分)',
+			数据拉取日期 DATE COMMENT '数据拉取日期',
+			创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (小程序名称, 小程序ID, 数据拉取日期),
+			KEY idx_appid_fetch_date (小程序ID, 数据拉取日期)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='结算数据表';`,
+		`CREATE TABLE IF NOT EXISTS fetch_log (
+			小程序名称 VARCHAR(64) COMMENT '小程序名称',
+			小程序ID VARCHAR(32) COMMENT '小程序AppID',
+			拉取类型 VARCHAR(32) NOT NULL COMMENT '拉取类型',
+			拉取日期 DATE COMMENT '拉取的数据日期',
+			状态 VARCHAR(16) NOT NULL COMMENT '状态',
+			记录数 INT COMMENT '拉取的记录数',
+			错误信息 TEXT COMMENT '错误信息',
+			创建时间 DATETIME DEFAULT CURRENT_TIMESTAMP,
+			KEY idx_fetch_type (拉取类型),
+			KEY idx_create_time (创建时间)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据拉取日志表';`,
 	}
 
 	for _, table := range tables {
@@ -268,93 +327,765 @@ func initDatabase(db *sql.DB) error {
 	return nil
 }
 
-func syncAdUnitList(db *sql.DB, miniProgramName, accessToken string, logChan chan<- string) error {
-	logChan <- fmt.Sprintf("✅ [%s] 正在获取广告位列表...", miniProgramName)
+var tokenCaches = sync.Map{}
+
+type tokenCache struct {
+	token      string
+	expireTime int64
+}
+
+func getTokenWithCache(appid, appsecret string) (string, error) {
+	now := time.Now().UnixNano() / 1e6
 	
-	apiURL := fmt.Sprintf("https://api.weixin.qq.com/publisher/stat?action=get_adunit_list&access_token=%s", accessToken)
-	resp, err := http.Get(apiURL)
+	if cached, ok := tokenCaches.Load(appid); ok {
+		cache := cached.(tokenCache)
+		if now < cache.expireTime-300000 {
+			return cache.token, nil
+		}
+	}
+	
+	token, err := getToken(appid, appsecret)
 	if err != nil {
-		return fmt.Errorf("获取广告位列表失败: %v", err)
+		return "", err
 	}
-	defer resp.Body.Close()
+	
+	tokenCaches.Store(appid, tokenCache{
+		token:      token,
+		expireTime: now + 7200000,
+	})
+	
+	return token, nil
+}
 
-	var result struct {
-		Errcode   int `json:"errcode"`
-		Errmsg    string `json:"errmsg"`
-		AdunitList []struct {
-			AdslotId   string `json:"adslot_id"`
-			AdslotName string `json:"adslot_name"`
-			AdslotType string `json:"adslot_type"`
-		} `json:"data"`
+func fetchDataWithRetry(token, action, appid, appsecret, apiBase string, extraParams map[string]string) (map[string]interface{}, error) {
+	currentToken := token
+	retryCount := 0
+	tokenRefreshCount := 0
+	maxRetries := 3
+	maxTokenRefresh := 5
+	
+	for retryCount < maxRetries {
+		params := url.Values{}
+		params.Set("access_token", currentToken)
+		params.Set("action", action)
+		params.Set("page", "1")
+		params.Set("page_size", "90")
+		
+		for k, v := range extraParams {
+			params.Set(k, v)
+		}
+		
+		apiURL := apiBase + "?" + params.Encode()
+		resp, err := http.Get(apiURL)
+		if err != nil {
+			retryCount++
+			time.Sleep(time.Duration(retryCount) * time.Second)
+			continue
+		}
+		defer resp.Body.Close()
+		
+		var result map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, fmt.Errorf("JSON解析失败: %v", err)
+		}
+		
+		if errcode, ok := result["errcode"].(float64); ok {
+			if errcode == 40001 || errcode == 42001 {
+				if tokenRefreshCount >= maxTokenRefresh {
+					return nil, fmt.Errorf("Token刷新次数超过限制")
+				}
+				currentToken, err = getToken(appid, appsecret)
+				if err != nil {
+					return nil, err
+				}
+				tokenRefreshCount++
+				continue
+			}
+		}
+		
+		if ret, ok := result["ret"].(float64); ok && ret != 0 {
+			if ret == 45009 {
+				time.Sleep(2 * time.Second)
+				retryCount++
+				continue
+			}
+			errMsg := ""
+			if em, ok := result["err_msg"].(string); ok {
+				errMsg = em
+			} else if em, ok := result["errmsg"].(string); ok {
+				errMsg = em
+			}
+			return nil, fmt.Errorf("API错误 [%d]: %s", int(ret), errMsg)
+		}
+		
+		return result, nil
 	}
+	
+	return nil, fmt.Errorf("重试次数超过限制")
+}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("解析广告位列表失败: %v", err)
+func fetchAllPagesByDateRange(token, action, startDate, endDate, appid, appsecret, apiBase string) ([]map[string]interface{}, error) {
+	var allList []map[string]interface{}
+	page := 1
+	pageSize := 90
+	hasMore := true
+	
+	for hasMore {
+		params := map[string]string{
+			"start_date": startDate,
+			"end_date":   endDate,
+			"page":       fmt.Sprintf("%d", page),
+			"page_size":  fmt.Sprintf("%d", pageSize),
+		}
+		
+		data, err := fetchDataWithRetry(token, action, appid, appsecret, apiBase, params)
+		if err != nil {
+			return nil, err
+		}
+		
+		var list []map[string]interface{}
+		if dataList, ok := data["list"].([]interface{}); ok {
+			for _, item := range dataList {
+				if m, ok := item.(map[string]interface{}); ok {
+					list = append(list, m)
+				}
+			}
+		}
+		
+		allList = append(allList, list...)
+		
+		totalNum := 0
+		if tn, ok := data["total_num"].(float64); ok {
+			totalNum = int(tn)
+		}
+		
+		if page*pageSize >= totalNum || len(list) < pageSize {
+			hasMore = false
+		} else {
+			page++
+			time.Sleep(500 * time.Millisecond)
+		}
 	}
+	
+	return allList, nil
+}
 
-	if result.Errcode != 0 {
-		return fmt.Errorf("微信API错误: %s", result.Errmsg)
+var AD_SLOT_NAMES = map[string]string{
+	"SLOT_ID_WEAPP_VIDEO_BEGIN":   "视频贴片",
+	"SLOT_ID_WEAPP_INTERSTITIAL":  "插屏",
+	"SLOT_ID_WEAPP_BANNER":        "Banner",
+	"SLOT_ID_WEAPP_REWARD_VIDEO":  "激励视频",
+	"SLOT_ID_WEAPP_TEMPLATE":      "原生模版",
+	"SLOT_ID_WEAPP_COVER":         "封面",
+}
+
+var AD_STATUS_NAMES = map[string]string{
+	"AD_UNIT_STATUS_ON":  "正常",
+	"AD_UNIT_STATUS_OFF": "暂停",
+}
+
+func fenToYuan(fen float64) float64 {
+	return fen / 100
+}
+
+func formatRate(rate float64) string {
+	return fmt.Sprintf("%.2f%%", rate*100)
+}
+
+func getMonthRanges(startDate, endDate string) ([]map[string]string, error) {
+	var ranges []map[string]string
+	
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, err
 	}
+	
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, err
+	}
+	
+	for start.Before(end) || start.Equal(end) {
+		rangeStart := start.Format("2006-01-02")
+		lastDay := time.Date(start.Year(), start.Month()+1, 0, 0, 0, 0, 0, time.Local)
+		if lastDay.After(end) {
+			lastDay = end
+		}
+		rangeEnd := lastDay.Format("2006-01-02")
+		
+		ranges = append(ranges, map[string]string{
+			"start": rangeStart,
+			"end":   rangeEnd,
+		})
+		
+		start = time.Date(start.Year(), start.Month()+1, 1, 0, 0, 0, 0, time.Local)
+	}
+	
+	return ranges, nil
+}
 
-	logChan <- fmt.Sprintf("✅ [%s] 广告位列表同步完成，共 %d 个广告位", miniProgramName, len(result.AdunitList))
+func saveMiniProgram(db *sql.DB, name, appid, appsecret string) error {
+	_, err := db.Exec(`
+		INSERT INTO mini_program (名称, 小程序ID, 小程序Secret)
+		VALUES (?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			名称 = VALUES(名称),
+			小程序Secret = VALUES(小程序Secret),
+			更新时间 = CURRENT_TIMESTAMP
+	`, name, appid, appsecret)
+	return err
+}
+
+func saveAdunitList(db *sql.DB, name, appid string, list []map[string]interface{}) error {
+	if len(list) == 0 {
+		return nil
+	}
+	
+	for _, item := range list {
+		adUnitID := ""
+		if v, ok := item["ad_unit_id"].(string); ok {
+			adUnitID = v
+		}
+		
+		adUnitName := ""
+		if v, ok := item["ad_unit_name"].(string); ok {
+			adUnitName = v
+		}
+		
+		adSlot := ""
+		if v, ok := item["ad_slot"].(string); ok {
+			adSlot = v
+		}
+		
+		adSlotName := AD_SLOT_NAMES[adSlot]
+		if adSlotName == "" {
+			adSlotName = adSlot
+		}
+		
+		adUnitType := ""
+		if v, ok := item["ad_unit_type"].(string); ok {
+			adUnitType = v
+		}
+		
+		adUnitStatus := ""
+		if v, ok := item["ad_unit_status"].(string); ok {
+			adUnitStatus = v
+		}
+		
+		statusName := AD_STATUS_NAMES[adUnitStatus]
+		if statusName == "" {
+			statusName = adUnitStatus
+		}
+		
+		slotID := ""
+		if v, ok := item["slot_id"].(string); ok {
+			slotID = v
+		}
+		
+		adUnitSize := ""
+		if v, ok := item["ad_unit_size"].([]interface{}); ok {
+			sizeData, _ := json.Marshal(v)
+			adUnitSize = string(sizeData)
+		}
+		
+		allowPlayable := 0
+		if v, ok := item["is_allow_playable"].(bool); ok && v {
+			allowPlayable = 1
+		}
+		
+		videoMin := 0
+		if v, ok := item["video_duration_min"].(float64); ok {
+			videoMin = int(v)
+		}
+		
+		videoMax := 0
+		if v, ok := item["video_duration_max"].(float64); ok {
+			videoMax = int(v)
+		}
+		
+		templTypeList := ""
+		if v, ok := item["templ_type_list"].([]interface{}); ok {
+			var types []string
+			for _, t := range v {
+				if s, ok := t.(string); ok {
+					types = append(types, s)
+				}
+			}
+			templTypeList = ""
+			for i, t := range types {
+				if i > 0 {
+					templTypeList += ","
+				}
+				templTypeList += t
+			}
+		}
+		
+		_, err := db.Exec(`
+			INSERT INTO adunit_list (小程序名称, 小程序ID, 广告位唯一ID, 广告位名称, 广告位类型枚举, 广告位类型,
+				广告位类型值, 状态, 状态名称, 广告位数字ID, 广告尺寸, 是否允许可播放,
+				视频最短时长, 视频最长时长, 模版类型列表)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON DUPLICATE KEY UPDATE
+				广告位名称 = VALUES(广告位名称),
+				广告位类型枚举 = VALUES(广告位类型枚举),
+				广告位类型 = VALUES(广告位类型),
+				状态 = VALUES(状态),
+				状态名称 = VALUES(状态名称),
+				更新时间 = CURRENT_TIMESTAMP
+		`, name, appid, adUnitID, adUnitName, adSlot, adSlotName, adUnitType, adUnitStatus, statusName, slotID, adUnitSize, allowPlayable, videoMin, videoMax, templTypeList)
+		if err != nil {
+			return err
+		}
+	}
+	
 	return nil
 }
 
-func syncSummaryData(db *sql.DB, miniProgramName, accessToken, startDate, endDate string, logChan chan<- string) error {
-	logChan <- fmt.Sprintf("✅ [%s] 正在获取 %s 至 %s 的数据...", miniProgramName, startDate, endDate)
+func saveSummaryData(db *sql.DB, name, appid string, list []map[string]interface{}) error {
+	if len(list) == 0 {
+		return nil
+	}
 	
-	startDateFormatted := strings.ReplaceAll(startDate, "-", "")
-	endDateFormatted := strings.ReplaceAll(endDate, "-", "")
-	
-	apiURL := fmt.Sprintf("https://api.weixin.qq.com/publisher/stat?action=get_summary&access_token=%s&begin_date=%s&end_date=%s",
-		accessToken, startDateFormatted, endDateFormatted)
-	resp, err := http.Get(apiURL)
-	if err != nil {
-		return fmt.Errorf("获取汇总数据失败: %v", err)
-	}
-	defer resp.Body.Close()
-
-	var result struct {
-		Errcode int `json:"errcode"`
-		Errmsg  string `json:"errmsg"`
-		Data    []struct {
-			StatDate    string  `json:"stat_date"`
-			AdslotId    string  `json:"adslot_id"`
-			AdslotName  string  `json:"adslot_name"`
-			AdslotType  string  `json:"adslot_type"`
-			ReqCnt      int     `json:"req_cnt"`
-			ShowCnt     int     `json:"show_cnt"`
-			ClickCnt    int     `json:"click_cnt"`
-			Revenue     float64 `json:"revenue"`
-			Ecpm        float64 `json:"ecpm"`
-			ShowRate    float64 `json:"show_rate"`
-			ClickRate   float64 `json:"click_rate"`
-		} `json:"data"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("解析汇总数据失败: %v", err)
-	}
-
-	if result.Errcode != 0 {
-		return fmt.Errorf("微信API错误: %s", result.Errmsg)
-	}
-
-	for _, item := range result.Data {
-		_, err := db.Exec(`INSERT INTO publisher_adunit_general 
-			(mini_program_name, stat_date, adslot_id, adslot_name, adslot_type,
-			req_cnt, show_cnt, click_cnt, revenue, ecpm, show_rate, click_rate)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE 
-			req_cnt=VALUES(req_cnt), show_cnt=VALUES(show_cnt), click_cnt=VALUES(click_cnt),
-			revenue=VALUES(revenue), ecpm=VALUES(ecpm), show_rate=VALUES(show_rate), click_rate=VALUES(click_rate)`,
-			miniProgramName, item.StatDate, item.AdslotId, item.AdslotName, item.AdslotType,
-			item.ReqCnt, item.ShowCnt, item.ClickCnt, item.Revenue, item.Ecpm, item.ShowRate, item.ClickRate)
+	for _, item := range list {
+		dateVal := ""
+		if v, ok := item["date"].(string); ok {
+			dateVal = v[:10]
+		}
+		
+		adSlot := ""
+		if v, ok := item["ad_slot"].(string); ok {
+			adSlot = v
+		}
+		
+		adSlotName := AD_SLOT_NAMES[adSlot]
+		if adSlotName == "" {
+			adSlotName = adSlot
+		}
+		
+		slotStr := ""
+		if v, ok := item["slot_str"].(string); ok {
+			slotStr = v
+		} else if v, ok := item["slot_id"].(float64); ok {
+			slotStr = fmt.Sprintf("%d", int(v))
+		}
+		
+		reqSuccCount := 0
+		if v, ok := item["req_succ_count"].(float64); ok {
+			reqSuccCount = int(v)
+		}
+		
+		exposureCount := 0
+		if v, ok := item["exposure_count"].(float64); ok {
+			exposureCount = int(v)
+		}
+		
+		exposureRate := 0.0
+		if v, ok := item["exposure_rate"].(float64); ok {
+			exposureRate = v
+		}
+		
+		clickCount := 0
+		if v, ok := item["click_count"].(float64); ok {
+			clickCount = int(v)
+		}
+		
+		clickRate := 0.0
+		if v, ok := item["click_rate"].(float64); ok {
+			clickRate = v
+		}
+		
+		income := 0
+		if v, ok := item["income"].(float64); ok {
+			income = int(v)
+		}
+		
+		ecpm := 0.0
+		if v, ok := item["ecpm"].(float64); ok {
+			ecpm = v
+		}
+		
+		_, err := db.Exec(`
+			INSERT INTO publisher_adpos_general (小程序名称, 小程序ID, 日期, 广告位类型枚举, 广告位类型, 广告位数字ID,
+				成功请求次数, 曝光量, 曝光率, 点击量, 点击率, 总收入分, 总收入元, 千次曝光收入分, 千次曝光收入元)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON DUPLICATE KEY UPDATE
+				广告位类型 = VALUES(广告位类型),
+				成功请求次数 = VALUES(成功请求次数),
+				曝光量 = VALUES(曝光量),
+				曝光率 = VALUES(曝光率),
+				点击量 = VALUES(点击量),
+				点击率 = VALUES(点击率),
+				总收入分 = VALUES(总收入分),
+				总收入元 = VALUES(总收入元),
+				千次曝光收入分 = VALUES(千次曝光收入分),
+				千次曝光收入元 = VALUES(千次曝光收入元)
+		`, name, appid, dateVal, adSlot, adSlotName, slotStr, reqSuccCount, exposureCount, formatRate(exposureRate), clickCount, formatRate(clickRate), income, fenToYuan(float64(income)), ecpm, fenToYuan(ecpm))
 		if err != nil {
-			logChan <- fmt.Sprintf("❌ [%s] 保存数据 %s 失败: %v", miniProgramName, item.StatDate, err)
+			return err
 		}
 	}
+	
+	return nil
+}
 
-	logChan <- fmt.Sprintf("✅ [%s] 数据同步完成，共 %d 条记录", miniProgramName, len(result.Data))
+func saveDetailData(db *sql.DB, name, appid string, list []map[string]interface{}) error {
+	if len(list) == 0 {
+		return nil
+	}
+	
+	for _, item := range list {
+		adUnitID := ""
+		if v, ok := item["ad_unit_id"].(string); ok {
+			adUnitID = v
+		}
+		
+		adUnitName := ""
+		if v, ok := item["ad_unit_name"].(string); ok {
+			adUnitName = v
+		}
+		
+		var statItem map[string]interface{}
+		if v, ok := item["stat_item"].(map[string]interface{}); ok {
+			statItem = v
+		}
+		
+		dateVal := ""
+		if statItem != nil {
+			if v, ok := statItem["date"].(string); ok {
+				dateVal = v[:10]
+			}
+		}
+		
+		adSlot := ""
+		if statItem != nil {
+			if v, ok := statItem["ad_slot"].(string); ok {
+				adSlot = v
+			}
+		}
+		
+		adSlotName := AD_SLOT_NAMES[adSlot]
+		if adSlotName == "" {
+			adSlotName = adSlot
+		}
+		
+		slotStr := ""
+		if statItem != nil {
+			if v, ok := statItem["slot_str"].(string); ok {
+				slotStr = v
+			}
+		}
+		
+		reqSuccCount := 0
+		if statItem != nil {
+			if v, ok := statItem["req_succ_count"].(float64); ok {
+				reqSuccCount = int(v)
+			}
+		}
+		
+		exposureCount := 0
+		if statItem != nil {
+			if v, ok := statItem["exposure_count"].(float64); ok {
+				exposureCount = int(v)
+			}
+		}
+		
+		exposureRate := 0.0
+		if statItem != nil {
+			if v, ok := statItem["exposure_rate"].(float64); ok {
+				exposureRate = v
+			}
+		}
+		
+		clickCount := 0
+		if statItem != nil {
+			if v, ok := statItem["click_count"].(float64); ok {
+				clickCount = int(v)
+			}
+		}
+		
+		clickRate := 0.0
+		if statItem != nil {
+			if v, ok := statItem["click_rate"].(float64); ok {
+				clickRate = v
+			}
+		}
+		
+		income := 0
+		if statItem != nil {
+			if v, ok := statItem["income"].(float64); ok {
+				income = int(v)
+			}
+		}
+		
+		publisherIncome := 0
+		if statItem != nil {
+			if v, ok := statItem["publisher_income"].(float64); ok {
+				publisherIncome = int(v)
+			}
+		}
+		
+		agencyIncome := 0
+		if statItem != nil {
+			if v, ok := statItem["agency_income"].(float64); ok {
+				agencyIncome = int(v)
+			}
+		}
+		
+		ecpm := 0.0
+		if statItem != nil {
+			if v, ok := statItem["ecpm"].(float64); ok {
+				ecpm = v
+			}
+		}
+		
+		isSmartAds := 0
+		if statItem != nil {
+			if v, ok := statItem["is_smart_ads"].(float64); ok && v != 0 {
+				isSmartAds = 1
+			}
+		}
+		
+		parentTemplType := ""
+		if statItem != nil {
+			if v, ok := statItem["parent_templ_type"].(string); ok {
+				parentTemplType = v
+			}
+		}
+		
+		_, err := db.Exec(`
+			INSERT INTO publisher_adunit_general (小程序名称, 小程序ID, 广告位唯一ID, 广告位名称, 日期,
+				广告位类型枚举, 广告位类型, 广告位数字ID, 成功请求次数, 曝光量, 曝光率, 点击量, 点击率,
+				总收入分, 总收入元, 流量主收入分, 流量主收入元, 代理商收入分, 千次曝光收入分, 千次曝光收入元, 是否智能广告, 父模版类型)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON DUPLICATE KEY UPDATE
+				广告位名称 = VALUES(广告位名称),
+				广告位类型 = VALUES(广告位类型),
+				成功请求次数 = VALUES(成功请求次数),
+				曝光量 = VALUES(曝光量),
+				曝光率 = VALUES(曝光率),
+				点击量 = VALUES(点击量),
+				点击率 = VALUES(点击率),
+				总收入分 = VALUES(总收入分),
+				总收入元 = VALUES(总收入元),
+				流量主收入分 = VALUES(流量主收入分),
+				流量主收入元 = VALUES(流量主收入元),
+				代理商收入分 = VALUES(代理商收入分),
+				千次曝光收入分 = VALUES(千次曝光收入分),
+				千次曝光收入元 = VALUES(千次曝光收入元),
+				是否智能广告 = VALUES(是否智能广告),
+				父模版类型 = VALUES(父模版类型)
+		`, name, appid, adUnitID, adUnitName, dateVal, adSlot, adSlotName, slotStr, reqSuccCount, exposureCount, formatRate(exposureRate), clickCount, formatRate(clickRate), income, fenToYuan(float64(income)), publisherIncome, fenToYuan(float64(publisherIncome)), agencyIncome, ecpm, fenToYuan(ecpm), isSmartAds, parentTemplType)
+		if err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+
+func saveSettlementData(db *sql.DB, name, appid string, data map[string]interface{}) error {
+	revenueAll := int64(0)
+	if v, ok := data["revenue_all"].(float64); ok {
+		revenueAll = int64(v)
+	}
+	
+	settledRevenueAll := int64(0)
+	if v, ok := data["settled_revenue_all"].(float64); ok {
+		settledRevenueAll = int64(v)
+	}
+	
+	penaltyAll := int64(0)
+	if v, ok := data["penalty_all"].(float64); ok {
+		penaltyAll = int64(v)
+	}
+	
+	wywRevenueAll := int64(0)
+	wywSettledRevenueAll := int64(0)
+	wywPenaltyAll := int64(0)
+	if wyw, ok := data["wyw_settled_summary"].(map[string]interface{}); ok {
+		if v, ok := wyw["wyw_revenue_all"].(float64); ok {
+			wywRevenueAll = int64(v)
+		}
+		if v, ok := wyw["wyw_settled_revenue_all"].(float64); ok {
+			wywSettledRevenueAll = int64(v)
+		}
+		if v, ok := wyw["wyw_penalty_all"].(float64); ok {
+			wywPenaltyAll = int64(v)
+		}
+	}
+	
+	_, err := db.Exec(`
+		INSERT INTO publisher_settlement (小程序名称, 小程序ID, 总预估收入分, 总预估收入元,
+			总已结算收入分, 总已结算收入元, 总罚金分, 总罚金元,
+			微信云开发总预估收入分, 微信云开发总已结算收入分, 微信云开发总罚金分, 数据拉取日期)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE())
+		ON DUPLICATE KEY UPDATE
+			总预估收入分 = VALUES(总预估收入分),
+			总预估收入元 = VALUES(总预估收入元),
+			总已结算收入分 = VALUES(总已结算收入分),
+			总已结算收入元 = VALUES(总已结算收入元),
+			总罚金分 = VALUES(总罚金分),
+			总罚金元 = VALUES(总罚金元),
+			微信云开发总预估收入分 = VALUES(微信云开发总预估收入分),
+			微信云开发总已结算收入分 = VALUES(微信云开发总已结算收入分),
+			微信云开发总罚金分 = VALUES(微信云开发总罚金分),
+			创建时间 = CURRENT_TIMESTAMP
+	`, name, appid, revenueAll, fenToYuan(float64(revenueAll)), settledRevenueAll, fenToYuan(float64(settledRevenueAll)), penaltyAll, fenToYuan(float64(penaltyAll)), wywRevenueAll, wywSettledRevenueAll, wywPenaltyAll)
+	return err
+}
+
+func logFetch(db *sql.DB, name, appid, fetchType, fetchDate, status string, totalCount int, errorMessage string) error {
+	_, err := db.Exec(`
+		INSERT INTO fetch_log (小程序名称, 小程序ID, 拉取类型, 拉取日期, 状态, 记录数, 错误信息)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, name, appid, fetchType, fetchDate, status, totalCount, errorMessage)
+	return err
+}
+
+func getLatestDataDate(db *sql.DB, tableName, dateColumn, appid string, defaultDate string) string {
+	var latestDate string
+	err := db.QueryRow(fmt.Sprintf(`SELECT MAX(%s) as latest_date FROM %s WHERE 小程序ID = ?`, dateColumn, tableName), appid).Scan(&latestDate)
+	if err != nil || latestDate == "" {
+		return defaultDate
+	}
+	
+	d, err := time.Parse("2006-01-02", latestDate)
+	if err != nil {
+		return defaultDate
+	}
+	
+	d = d.AddDate(0, 0, 1)
+	return d.Format("2006-01-02")
+}
+
+func syncAdUnitList(db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase string, logChan chan<- string) error {
+	logChan <- fmt.Sprintf("✅ [%s] 正在获取广告位列表...", miniProgramName)
+	
+	data, err := fetchDataWithRetry(accessToken, "get_adunit_list", appid, appsecret, apiBase, map[string]string{})
+	if err != nil {
+		return fmt.Errorf("获取广告位列表失败: %v", err)
+	}
+	
+	var adUnits []map[string]interface{}
+	if adUnitList, ok := data["ad_unit"].([]interface{}); ok {
+		for _, item := range adUnitList {
+			if m, ok := item.(map[string]interface{}); ok {
+				adUnits = append(adUnits, m)
+			}
+		}
+	}
+	
+	if len(adUnits) > 0 {
+		if err := saveAdunitList(db, miniProgramName, appid, adUnits); err != nil {
+			return fmt.Errorf("保存广告位列表失败: %v", err)
+		}
+		logChan <- fmt.Sprintf("✅ [%s] 广告位清单已保存", miniProgramName)
+	}
+	
+	if err := logFetch(db, miniProgramName, appid, "adunit_list", "", "success", len(adUnits), ""); err != nil {
+		logChan <- fmt.Sprintf("⚠️ [%s] 记录日志失败: %v", miniProgramName, err)
+	}
+	
+	logChan <- fmt.Sprintf("✅ [%s] 广告位列表同步完成，共 %d 个广告位", miniProgramName, len(adUnits))
+	return nil
+}
+
+func syncSummaryData(db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase, startDate, endDate string, logChan chan<- string) (int, error) {
+	logChan <- fmt.Sprintf("✅ [%s] 正在获取 %s 至 %s 的汇总数据...", miniProgramName, startDate, endDate)
+	
+	ranges, err := getMonthRanges(startDate, endDate)
+	if err != nil {
+		return 0, fmt.Errorf("生成日期范围失败: %v", err)
+	}
+	
+	totalCount := 0
+	for _, r := range ranges {
+		data, err := fetchAllPagesByDateRange(accessToken, "publisher_adpos_general", r["start"], r["end"], appid, appsecret, apiBase)
+		if err != nil {
+			logChan <- fmt.Sprintf("❌ [%s] %s ~ %s: 拉取失败 - %v", miniProgramName, r["start"], r["end"], err)
+			continue
+		}
+		
+		if len(data) > 0 {
+			if err := saveSummaryData(db, miniProgramName, appid, data); err != nil {
+				logChan <- fmt.Sprintf("❌ [%s] %s ~ %s: 保存失败 - %v", miniProgramName, r["start"], r["end"], err)
+			} else {
+				totalCount += len(data)
+				logChan <- fmt.Sprintf("✅ [%s] %s ~ %s: %d 条", miniProgramName, r["start"], r["end"], len(data))
+			}
+		} else {
+			logChan <- fmt.Sprintf("ℹ️ [%s] %s ~ %s: 无数据", miniProgramName, r["start"], r["end"])
+		}
+		
+		time.Sleep(500 * time.Millisecond)
+	}
+	
+	return totalCount, nil
+}
+
+func syncDetailData(db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase, startDate, endDate string, logChan chan<- string) (int, error) {
+	logChan <- fmt.Sprintf("✅ [%s] 正在获取 %s 至 %s 的细分数据...", miniProgramName, startDate, endDate)
+	
+	ranges, err := getMonthRanges(startDate, endDate)
+	if err != nil {
+		return 0, fmt.Errorf("生成日期范围失败: %v", err)
+	}
+	
+	totalCount := 0
+	for _, r := range ranges {
+		data, err := fetchAllPagesByDateRange(accessToken, "publisher_adunit_general", r["start"], r["end"], appid, appsecret, apiBase)
+		if err != nil {
+			logChan <- fmt.Sprintf("❌ [%s] %s ~ %s: 拉取失败 - %v", miniProgramName, r["start"], r["end"], err)
+			continue
+		}
+		
+		if len(data) > 0 {
+			if err := saveDetailData(db, miniProgramName, appid, data); err != nil {
+				logChan <- fmt.Sprintf("❌ [%s] %s ~ %s: 保存失败 - %v", miniProgramName, r["start"], r["end"], err)
+			} else {
+				totalCount += len(data)
+				logChan <- fmt.Sprintf("✅ [%s] %s ~ %s: %d 条", miniProgramName, r["start"], r["end"], len(data))
+			}
+		} else {
+			logChan <- fmt.Sprintf("ℹ️ [%s] %s ~ %s: 无数据", miniProgramName, r["start"], r["end"])
+		}
+		
+		time.Sleep(500 * time.Millisecond)
+	}
+	
+	return totalCount, nil
+}
+
+func syncSettlementData(db *sql.DB, miniProgramName, appid, appsecret, accessToken, apiBase string, logChan chan<- string) error {
+	logChan <- fmt.Sprintf("✅ [%s] 正在获取结算数据...", miniProgramName)
+	
+	data, err := fetchDataWithRetry(accessToken, "publisher_settlement", appid, appsecret, apiBase, map[string]string{})
+	if err != nil {
+		return fmt.Errorf("获取结算数据失败: %v", err)
+	}
+	
+	if err := saveSettlementData(db, miniProgramName, appid, data); err != nil {
+		return fmt.Errorf("保存结算数据失败: %v", err)
+	}
+	
+	revenueAll := 0.0
+	if v, ok := data["revenue_all"].(float64); ok {
+		revenueAll = v
+	}
+	
+	settledRevenueAll := 0.0
+	if v, ok := data["settled_revenue_all"].(float64); ok {
+		settledRevenueAll = v
+	}
+	
+	logChan <- fmt.Sprintf("✅ [%s] 结算数据已保存", miniProgramName)
+	logChan <- fmt.Sprintf("ℹ️ [%s] 总预估收入: %.2f 元", miniProgramName, fenToYuan(revenueAll))
+	logChan <- fmt.Sprintf("ℹ️ [%s] 总已结算收入: %.2f 元", miniProgramName, fenToYuan(settledRevenueAll))
+	
+	if err := logFetch(db, miniProgramName, appid, "publisher_settlement", time.Now().Format("2006-01-02"), "success", 1, ""); err != nil {
+		logChan <- fmt.Sprintf("⚠️ [%s] 记录日志失败: %v", miniProgramName, err)
+	}
+	
 	return nil
 }
 
@@ -420,7 +1151,7 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		for i, mp := range cfg.MiniPrograms {
+	for i, mp := range cfg.MiniPrograms {
 			select {
 			case <-ctx.Done():
 				logChan <- "⚠️ 任务已中断"
@@ -430,15 +1161,25 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 
 			logChan <- fmt.Sprintf("📱 正在处理小程序 %s (%d/%d)...", mp.Name, i+1, len(cfg.MiniPrograms))
 
+			if err := saveMiniProgram(db, mp.Name, mp.AppID, mp.AppSecret); err != nil {
+				logChan <- fmt.Sprintf("⚠️ [%s] 保存小程序配置失败: %v", mp.Name, err)
+			}
+
 			logChan <- fmt.Sprintf("🔑 [%s] 正在获取 Access Token...", mp.Name)
-			token, err := getToken(mp.AppID, mp.AppSecret)
+			token, err := getTokenWithCache(mp.AppID, mp.AppSecret)
 			if err != nil {
 				logChan <- fmt.Sprintf("❌ [%s] 获取Token失败: %v", mp.Name, err)
 				continue
 			}
 			logChan <- fmt.Sprintf("✅ [%s] 获取Token成功", mp.Name)
 
-			if err := syncAdUnitList(db, mp.Name, token, logChan); err != nil {
+			apiBase := cfg.Settings.APIBase
+			if apiBase == "" {
+				apiBase = "https://api.weixin.qq.com/publisher/stat"
+			}
+
+			logChan <- "\n----- 1. 拉取广告位清单 -----"
+			if err := syncAdUnitList(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, logChan); err != nil {
 				logChan <- fmt.Sprintf("❌ [%s] 同步广告位列表失败: %v", mp.Name, err)
 			}
 
@@ -448,14 +1189,44 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 				startDate = "2025-07-01"
 			}
 
-			if err := syncSummaryData(db, mp.Name, token, startDate, endDate, logChan); err != nil {
-				logChan <- fmt.Sprintf("❌ [%s] 同步数据失败: %v", mp.Name, err)
+			logChan <- "\n----- 2. 拉取汇总数据 -----"
+			lastSummaryDate := getLatestDataDate(db, "publisher_adpos_general", "日期", mp.AppID, startDate)
+			logChan <- fmt.Sprintf("从 %s 开始拉取汇总数据...", lastSummaryDate)
+			summaryCount, err := syncSummaryData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastSummaryDate, endDate, logChan)
+			if err != nil {
+				logChan <- fmt.Sprintf("❌ [%s] 同步汇总数据失败: %v", mp.Name, err)
+			} else {
+				logChan <- fmt.Sprintf("汇总数据拉取完成, 共 %d 条", summaryCount)
+				if err := logFetch(db, mp.Name, mp.AppID, "publisher_adpos_general", endDate, "success", summaryCount, ""); err != nil {
+					logChan <- fmt.Sprintf("⚠️ [%s] 记录日志失败: %v", mp.Name, err)
+				}
+			}
+
+			logChan <- "\n----- 3. 拉取细分数据 -----"
+			lastDetailDate := getLatestDataDate(db, "publisher_adunit_general", "日期", mp.AppID, startDate)
+			logChan <- fmt.Sprintf("从 %s 开始拉取细分数据...", lastDetailDate)
+			detailCount, err := syncDetailData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, lastDetailDate, endDate, logChan)
+			if err != nil {
+				logChan <- fmt.Sprintf("❌ [%s] 同步细分数据失败: %v", mp.Name, err)
+			} else {
+				logChan <- fmt.Sprintf("细分数据拉取完成, 共 %d 条", detailCount)
+				if err := logFetch(db, mp.Name, mp.AppID, "publisher_adunit_general", endDate, "success", detailCount, ""); err != nil {
+					logChan <- fmt.Sprintf("⚠️ [%s] 记录日志失败: %v", mp.Name, err)
+				}
+			}
+
+			logChan <- "\n----- 4. 拉取结算数据 -----"
+			if err := syncSettlementData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, logChan); err != nil {
+				logChan <- fmt.Sprintf("❌ [%s] 同步结算数据失败: %v", mp.Name, err)
+				if err := logFetch(db, mp.Name, mp.AppID, "publisher_settlement", endDate, "failed", 0, err.Error()); err != nil {
+					logChan <- fmt.Sprintf("⚠️ [%s] 记录日志失败: %v", mp.Name, err)
+				}
 			}
 
 			time.Sleep(500 * time.Millisecond)
 		}
 
-		logChan <- "🎉 所有任务执行完成！"
+		logChan <- "\n🎉 所有任务执行完成！"
 	}()
 
 	// 实时发送日志
