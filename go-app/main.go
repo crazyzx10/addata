@@ -196,7 +196,17 @@ func getDBConnection(cfg Config) (*sql.DB, error) {
 		port,
 		cfg.Database.Database,
 	)
-	return sql.Open("mysql", dsn)
+	
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+	
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(time.Minute * 30)
+	
+	return db, nil
 }
 
 func testDatabaseConnection(w http.ResponseWriter, r *http.Request) {
@@ -1041,10 +1051,12 @@ func getLatestDataDate(db *sql.DB, tableName, dateColumn, appid string, defaultD
 	err := db.QueryRow(query, appid).Scan(&latestDate)
 	
 	if err != nil {
+		log.Printf("[getLatestDataDate] 查询失败 - 小程序ID: %s, 数据表: %s, 错误: %v", appid, tableName, err)
 		return defaultDate
 	}
 	
 	if !latestDate.Valid || latestDate.String == "" {
+		log.Printf("[getLatestDataDate] 无数据 - 小程序ID: %s, 数据表: %s", appid, tableName)
 		return defaultDate
 	}
 	
@@ -1055,10 +1067,12 @@ func getLatestDataDate(db *sql.DB, tableName, dateColumn, appid string, defaultD
 	
 	d, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
+		log.Printf("[getLatestDataDate] 日期解析失败 - 小程序ID: %s, 原始日期: %s, 错误: %v", appid, latestDate.String, err)
 		return defaultDate
 	}
 	
 	d = d.AddDate(0, 0, 1)
+	log.Printf("[getLatestDataDate] 查询成功 - 小程序ID: %s, 最新日期: %s, 拉取起始日期: %s", appid, dateStr, d.Format("2006-01-02"))
 	return d.Format("2006-01-02")
 }
 
