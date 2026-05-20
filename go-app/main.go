@@ -1035,30 +1035,33 @@ func logFetch(db *sql.DB, name, appid, fetchType, fetchDate, status string, tota
 }
 
 func getLatestDataDate(db *sql.DB, tableName, dateColumn, appid string, defaultDate string) string {
-	var latestDate string
-	err := db.QueryRow(fmt.Sprintf(`SELECT MAX(%s) as latest_date FROM %s WHERE 小程序ID = ?`, dateColumn, tableName), appid).Scan(&latestDate)
+	var latestDate sql.NullString
+	query := fmt.Sprintf(`SELECT MAX(%s) as latest_date FROM %s WHERE 小程序ID = ?`, dateColumn, tableName)
+	fmt.Printf("DEBUG: Executing query: %s with appid=%s\n", query, appid)
+	
+	err := db.QueryRow(query, appid).Scan(&latestDate)
 	
 	if err != nil {
 		fmt.Printf("DEBUG: getLatestDataDate error for appid=%s, table=%s: %v\n", appid, tableName, err)
 		return defaultDate
 	}
 	
-	if latestDate == "" {
+	if !latestDate.Valid || latestDate.String == "" {
 		fmt.Printf("DEBUG: getLatestDataDate no data found for appid=%s, table=%s, using default=%s\n", appid, tableName, defaultDate)
 		return defaultDate
 	}
 	
-	fmt.Printf("DEBUG: getLatestDataDate found latest date=%s for appid=%s, table=%s\n", latestDate, appid, tableName)
+	fmt.Printf("DEBUG: getLatestDataDate found latest date=%s for appid=%s, table=%s\n", latestDate.String, appid, tableName)
 	
-	d, err := time.Parse("2006-01-02", latestDate)
+	d, err := time.Parse("2006-01-02", latestDate.String)
 	if err != nil {
-		fmt.Printf("DEBUG: getLatestDataDate parse error for date=%s: %v\n", latestDate, err)
+		fmt.Printf("DEBUG: getLatestDataDate parse error for date=%s: %v\n", latestDate.String, err)
 		return defaultDate
 	}
 	
 	d = d.AddDate(0, 0, 1)
 	result := d.Format("2006-01-02")
-	fmt.Printf("DEBUG: getLatestDataDate returning %s (next day after %s)\n", result, latestDate)
+	fmt.Printf("DEBUG: getLatestDataDate returning %s (next day after %s)\n", result, latestDate.String)
 	return result
 }
 
