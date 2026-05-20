@@ -72,7 +72,7 @@ func loadConfig() (Config, error) {
 					Database: "ad_data",
 				},
 				Settings: SettingsConfig{
-					StartDate: "2025-01-01",
+					StartDate: "2025-07-01",
 				},
 				MiniPrograms: []MiniProgramConfig{},
 			}, nil
@@ -341,7 +341,7 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			endDate := time.Now().Format("2006-01-02")
 			startDate := cfg.Settings.StartDate
 			if startDate == "" {
-				startDate = "2025-01-01"
+				startDate = "2025-07-01"
 			}
 
 			if err := syncSummaryData(db, mp.Name, token, startDate, endDate, logChan); err != nil {
