@@ -314,6 +314,58 @@
             margin-bottom: 4px;
         }
 
+        .progress-container {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-title {
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .progress-percent {
+            font-weight: 700;
+            color: #3b82f6;
+            font-size: 16px;
+        }
+
+        .progress-bar-wrapper {
+            height: 12px;
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 6px;
+        }
+
+        .progress-status {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -467,6 +519,19 @@
                     <button class="action-btn" id="export-config">导出配置</button>
                     <button class="action-btn" id="import-config">导入配置</button>
                 </div>
+                
+                <!-- 进度条 -->
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-header">
+                        <span class="progress-title">📊 任务进度</span>
+                        <span class="progress-percent" id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <div class="progress-status" id="progress-status">等待开始...</div>
+                </div>
+                
                 <div class="card-title">📜 执行日志</div>
                 <div class="log-container" id="log-container">
                     <div class="log-info">> 等待执行...</div>
@@ -722,6 +787,15 @@
 
         // 清空日志
         document.getElementById('clear-logs').addEventListener('click', () => {
+            // 重置进度条
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            const progressStatus = document.getElementById('progress-status');
+            progressContainer.classList.remove('active');
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+            progressStatus.textContent = '等待开始...';
             document.getElementById('log-container').innerHTML = '<div class="log-info">> 等待执行...</div>';
         });
 
@@ -735,6 +809,16 @@
             abortController = new AbortController();
             startBtn.disabled = true;
             stopBtn.disabled = false;
+
+            // 显示进度条
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            const progressStatus = document.getElementById('progress-status');
+            progressContainer.classList.add('active');
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+            progressStatus.textContent = '准备中...';
 
             try {
                 const response = await fetch('/api/execute', { 
@@ -752,13 +836,25 @@
                     const lines = text.split('\n').filter(line => line.trim());
 
                     lines.forEach(line => {
-                        const div = document.createElement('div');
-                        if (line.includes('✅')) div.className = 'log-success';
-                        else if (line.includes('❌') || line.includes('错误')) div.className = 'log-error';
-                        else if (line.includes('⚠️')) div.className = 'log-warning';
-                        else div.className = 'log-info';
-                        div.textContent = line;
-                        logContainer.appendChild(div);
+                        // 检查是否是进度更新
+                        if (line.startsWith('[PROGRESS]')) {
+                            const parts = line.substring(10).split(' ');
+                            const percent = parseInt(parts[0]);
+                            const statusMsg = parts.slice(1).join(' ');
+                            
+                            progressPercent.textContent = `${percent}%`;
+                            progressBar.style.width = `${percent}%`;
+                            progressStatus.textContent = statusMsg;
+                        } else {
+                            // 普通日志
+                            const div = document.createElement('div');
+                            if (line.includes('✅')) div.className = 'log-success';
+                            else if (line.includes('❌') || line.includes('错误')) div.className = 'log-error';
+                            else if (line.includes('⚠️')) div.className = 'log-warning';
+                            else div.className = 'log-info';
+                            div.textContent = line;
+                            logContainer.appendChild(div);
+                        }
                     });
 
                     logContainer.scrollTop = logContainer.scrollHeight;
@@ -779,6 +875,11 @@
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
                 abortController = null;
+                
+                // 任务结束，更新进度条
+                progressPercent.textContent = '100%';
+                progressBar.style.width = '100%';
+                progressStatus.textContent = '任务完成';
             }
         });
 

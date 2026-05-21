@@ -1467,7 +1467,7 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		totalSteps := len(cfg.MiniPrograms) * 4
+		totalSteps := len(cfg.MiniPrograms) * 5
 		currentStep := 0
 
 		for programIdx, mp := range cfg.MiniPrograms {
