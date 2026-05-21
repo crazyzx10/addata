@@ -49,8 +49,10 @@ type MiniProgramConfig struct {
 }
 
 var (
-	configPath string
-	mu         sync.Mutex
+	configPath   string
+	mu           sync.Mutex
+	httpClient   = &http.Client{Timeout: 30 * time.Second}
+	tokenCaches  = sync.Map{}
 )
 
 func init() {
@@ -212,10 +214,11 @@ func getDBConnection(cfg Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(time.Minute * 30)
+	db.SetConnMaxIdleTime(time.Minute * 10)
 	
 	return db, nil
 }
@@ -332,7 +335,7 @@ func saveConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 func getToken(appID, secret string) (string, error) {
 	url := fmt.Sprintf("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s", appID, secret)
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return "", err
 	}
@@ -471,8 +474,6 @@ func initDatabase(db *sql.DB) error {
 	return nil
 }
 
-var tokenCaches = sync.Map{}
-
 type tokenCache struct {
 	token      string
 	expireTime int64
@@ -520,7 +521,7 @@ func fetchDataWithRetry(token, action, appid, appsecret, apiBase string, extraPa
 		}
 		
 		apiURL := apiBase + "?" + params.Encode()
-		resp, err := http.Get(apiURL)
+		resp, err := httpClient.Get(apiURL)
 		if err != nil {
 			retryCount++
 			time.Sleep(time.Duration(retryCount) * time.Second)
@@ -796,11 +797,15 @@ func saveSummaryData(db *sql.DB, name, appid string, list []map[string]interface
 	if len(list) == 0 {
 		return nil
 	}
-	
+
 	for _, item := range list {
 		dateVal := ""
 		if v, ok := item["date"].(string); ok {
-			dateVal = v[:10]
+			if len(v) >= 10 {
+				dateVal = v[:10]
+			} else {
+				dateVal = v
+			}
 		}
 		
 		adSlot := ""
@@ -903,7 +908,11 @@ func saveDetailData(db *sql.DB, name, appid string, list []map[string]interface{
 		dateVal := ""
 		if statItem != nil {
 			if v, ok := statItem["date"].(string); ok {
-				dateVal = v[:10]
+				if len(v) >= 10 {
+					dateVal = v[:10]
+				} else {
+					dateVal = v
+				}
 			}
 		}
 		

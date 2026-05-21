@@ -630,28 +630,38 @@
             };
 
             try {
-                await fetch('/api/config', {
+                const response = await fetch('/api/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
                 });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    alert('保存失败：' + errorText);
+                    return;
+                }
                 alert('配置已保存');
             } catch (err) {
-                alert('保存失败');
+                alert('保存失败：' + (err.message || err));
             }
         });
 
         // 保存小程序配置
         document.getElementById('save-programs').addEventListener('click', async () => {
             try {
-                await fetch('/api/config', {
+                const response = await fetch('/api/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ miniPrograms })
                 });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    alert('保存失败：' + errorText);
+                    return;
+                }
                 alert('配置已保存');
             } catch (err) {
-                alert('保存失败');
+                alert('保存失败：' + (err.message || err));
             }
         });
 
