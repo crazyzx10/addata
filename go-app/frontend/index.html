@@ -320,11 +320,6 @@
             padding: 16px;
             margin-bottom: 16px;
             border: 1px solid rgba(51, 65, 85, 0.5);
-            display: none;
-        }
-
-        .progress-container.active {
-            display: block;
         }
 
         .progress-header {
@@ -529,7 +524,7 @@
                     <div class="progress-bar-wrapper">
                         <div class="progress-bar" id="progress-bar"></div>
                     </div>
-                    <div class="progress-status" id="progress-status">等待开始...</div>
+                    <div class="progress-status" id="progress-status">任务待执行</div>
                 </div>
                 
                 <div class="card-title">📜 执行日志</div>
@@ -787,15 +782,13 @@
 
         // 清空日志
         document.getElementById('clear-logs').addEventListener('click', () => {
-            // 重置进度条
-            const progressContainer = document.getElementById('progress-container');
+            // 重置进度条回到初始状态
             const progressBar = document.getElementById('progress-bar');
             const progressPercent = document.getElementById('progress-percent');
             const progressStatus = document.getElementById('progress-status');
-            progressContainer.classList.remove('active');
             progressBar.style.width = '0%';
             progressPercent.textContent = '0%';
-            progressStatus.textContent = '等待开始...';
+            progressStatus.textContent = '任务待执行';
             document.getElementById('log-container').innerHTML = '<div class="log-info">> 等待执行...</div>';
         });
 
@@ -810,12 +803,10 @@
             startBtn.disabled = true;
             stopBtn.disabled = false;
 
-            // 显示进度条
-            const progressContainer = document.getElementById('progress-container');
+            // 重置进度条
             const progressBar = document.getElementById('progress-bar');
             const progressPercent = document.getElementById('progress-percent');
             const progressStatus = document.getElementById('progress-status');
-            progressContainer.classList.add('active');
             progressBar.style.width = '0%';
             progressPercent.textContent = '0%';
             progressStatus.textContent = '准备中...';
@@ -865,21 +856,22 @@
                     div.className = 'log-warning';
                     div.textContent = '⚠️ 执行已中断';
                     logContainer.appendChild(div);
+                    
+                    // 中断时：进度条保持当前状态，显示任务中断
+                    progressStatus.textContent = '任务中断';
                 } else {
                     const div = document.createElement('div');
                     div.className = 'log-error';
                     div.textContent = '❌ 执行失败: ' + err.message;
                     logContainer.appendChild(div);
+                    
+                    // 失败时也更新状态
+                    progressStatus.textContent = '任务失败';
                 }
             } finally {
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
                 abortController = null;
-                
-                // 任务结束，更新进度条
-                progressPercent.textContent = '100%';
-                progressBar.style.width = '100%';
-                progressStatus.textContent = '任务完成';
             }
         });
 

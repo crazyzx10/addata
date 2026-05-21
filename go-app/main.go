@@ -1613,6 +1613,15 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 		logChan <- "\n========== 全部数据拉取完成 =========="
 		logChan <- fmt.Sprintf("完成时间: %s", time.Now().Format("2006-01-02 15:04:05"))
 		logChan <- fmt.Sprintf("总耗时: %s", formatDuration(mainDuration))
+		
+		// 发送100%进度更新
+		sendProgress(logChan, ProgressState{
+			CurrentProgram: len(cfg.MiniPrograms),
+			TotalPrograms:  len(cfg.MiniPrograms),
+			CurrentStep:    totalSteps,
+			TotalSteps:     totalSteps,
+			Message:        "任务完成",
+		})
 	}()
 
 	// 实时发送日志
