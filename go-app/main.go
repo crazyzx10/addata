@@ -1383,6 +1383,25 @@ func syncSettlementData(db *sql.DB, miniProgramName, appid, appsecret, accessTok
 	return nil
 }
 
+type ProgressState struct {
+	CurrentProgram  int
+	TotalPrograms int
+	CurrentStep  int
+	TotalSteps  int
+	Message string
+}
+
+func sendProgress(logChan chan<- string, state ProgressState) {
+	percent := 0
+	if state.TotalSteps > 0 {
+		percent = (state.CurrentStep * 100) / state.TotalSteps
+		if percent > 100 {
+			percent = 100
+		}
+	}
+	logChan <- fmt.Sprintf("[PROGRESS] %d %s", percent, state.Message)
+}
+
 func executeFetch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -1448,7 +1467,10 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		for _, mp := range cfg.MiniPrograms {
+		totalSteps := len(cfg.MiniPrograms) * 4
+		currentStep := 0
+
+		for programIdx, mp := range cfg.MiniPrograms {
 			select {
 			case <-ctx.Done():
 				logChan <- "⚠️ 任务已中断"
@@ -1458,6 +1480,16 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 
 			programStartTime := time.Now().UnixMilli()
 			logChan <- fmt.Sprintf("\n====== 处理小程序: %s (%s) ======", mp.Name, mp.AppID)
+
+			// 步骤1: 准备
+			currentStep++
+			sendProgress(logChan, ProgressState{
+				CurrentProgram: programIdx + 1,
+				TotalPrograms: len(cfg.MiniPrograms),
+				CurrentStep: currentStep,
+				TotalSteps: totalSteps,
+				Message: fmt.Sprintf("正在初始化 %s...", mp.Name),
+			})
 
 			if err := saveMiniProgram(db, mp.Name, mp.AppID, mp.AppSecret); err != nil {
 				logChan <- fmt.Sprintf("⚠️ [%s] 保存小程序配置失败: %v", mp.Name, err)
@@ -1476,6 +1508,16 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 				apiBase = "https://api.weixin.qq.com/publisher/stat"
 			}
 
+			// 步骤2: 拉取广告位清单
+			currentStep++
+			sendProgress(logChan, ProgressState{
+				CurrentProgram: programIdx + 1,
+				TotalPrograms: len(cfg.MiniPrograms),
+				CurrentStep: currentStep,
+				TotalSteps: totalSteps,
+				Message: fmt.Sprintf("正在获取 %s 的广告位清单...", mp.Name),
+			})
+
 			logChan <- "\n----- 1. 拉取广告位清单 -----"
 			if err := syncAdUnitList(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, logChan); err != nil {
 				logChan <- fmt.Sprintf("❌ [%s] 同步广告位列表失败: %v", mp.Name, err)
@@ -1487,6 +1529,16 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 				startDate = "2025-07-01"
 			}
 			logChan <- fmt.Sprintf("起始日期: %s", startDate)
+
+			// 步骤3: 拉取汇总数据
+			currentStep++
+			sendProgress(logChan, ProgressState{
+				CurrentProgram: programIdx + 1,
+				TotalPrograms: len(cfg.MiniPrograms),
+				CurrentStep: currentStep,
+				TotalSteps: totalSteps,
+				Message: fmt.Sprintf("正在获取 %s 的汇总数据...", mp.Name),
+			})
 
 			logChan <- "\n----- 2. 拉取汇总数据 -----"
 			lastSummaryDate := getLatestDataDate(db, "publisher_adpos_general", "日期", mp.AppID, startDate)
@@ -1505,6 +1557,16 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			// 步骤4: 拉取细分数据
+			currentStep++
+			sendProgress(logChan, ProgressState{
+				CurrentProgram: programIdx + 1,
+				TotalPrograms: len(cfg.MiniPrograms),
+				CurrentStep: currentStep,
+				TotalSteps: totalSteps,
+				Message: fmt.Sprintf("正在获取 %s 的细分数据...", mp.Name),
+			})
+
 			logChan <- "\n----- 3. 拉取细分数据 -----"
 			lastDetailDate := getLatestDataDate(db, "publisher_adunit_general", "日期", mp.AppID, startDate)
 			if lastDetailDate == startDate {
@@ -1521,6 +1583,16 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 					logChan <- fmt.Sprintf("⚠️ [%s] 记录日志失败: %v", mp.Name, err)
 				}
 			}
+
+			// 步骤1（下一个小程序）之前：拉取结算数据
+			currentStep++
+			sendProgress(logChan, ProgressState{
+				CurrentProgram: programIdx + 1,
+				TotalPrograms: len(cfg.MiniPrograms),
+				CurrentStep: currentStep,
+				TotalSteps: totalSteps,
+				Message: fmt.Sprintf("正在获取 %s 的结算数据...", mp.Name),
+			})
 
 			logChan <- "\n----- 4. 拉取结算数据 -----"
 			if err := syncSettlementData(db, mp.Name, mp.AppID, mp.AppSecret, token, apiBase, logChan); err != nil {
