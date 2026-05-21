@@ -666,6 +666,19 @@ func formatRate(rate float64) string {
 	return fmt.Sprintf("%.2f%%", rate*100)
 }
 
+func formatDuration(ms int64) string {
+	seconds := ms / 1000
+	minutes := seconds / 60
+	hours := minutes / 60
+
+	if hours > 0 {
+		return fmt.Sprintf("%d 小时 %d 分钟", hours, minutes%60)
+	} else if minutes > 0 {
+		return fmt.Sprintf("%d 分钟 %d 秒", minutes, seconds%60)
+	}
+	return fmt.Sprintf("%d 秒", seconds)
+}
+
 func getMonthRanges(startDate, endDate string) ([]map[string]string, error) {
 	var ranges []map[string]string
 	
@@ -1386,7 +1399,9 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 		defer close(logChan)
 		defer close(doneChan)
 
-		logChan <- "📊 开始执行数据拉取任务..."
+		mainStartTime := time.Now().UnixMilli()
+		logChan <- "========== 微信小程序广告数据拉取开始 =========="
+		logChan <- fmt.Sprintf("开始时间: %s", time.Now().Format("2006-01-02 15:04:05"))
 
 		select {
 		case <-ctx.Done():
@@ -1427,12 +1442,13 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 		}
 		logChan <- "✅ 数据库初始化完成"
 
+		logChan <- fmt.Sprintf("小程序数量: %d", len(cfg.MiniPrograms))
 		if len(cfg.MiniPrograms) == 0 {
 			logChan <- "⚠️ 没有配置小程序，任务结束"
 			return
 		}
 
-	for i, mp := range cfg.MiniPrograms {
+		for _, mp := range cfg.MiniPrograms {
 			select {
 			case <-ctx.Done():
 				logChan <- "⚠️ 任务已中断"
@@ -1440,7 +1456,8 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			default:
 			}
 
-			logChan <- fmt.Sprintf("📱 正在处理小程序 %s (%d/%d)...", mp.Name, i+1, len(cfg.MiniPrograms))
+			programStartTime := time.Now().UnixMilli()
+			logChan <- fmt.Sprintf("\n====== 处理小程序: %s (%s) ======", mp.Name, mp.AppID)
 
 			if err := saveMiniProgram(db, mp.Name, mp.AppID, mp.AppSecret); err != nil {
 				logChan <- fmt.Sprintf("⚠️ [%s] 保存小程序配置失败: %v", mp.Name, err)
@@ -1469,6 +1486,7 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 			if startDate == "" {
 				startDate = "2025-07-01"
 			}
+			logChan <- fmt.Sprintf("起始日期: %s", startDate)
 
 			logChan <- "\n----- 2. 拉取汇总数据 -----"
 			lastSummaryDate := getLatestDataDate(db, "publisher_adpos_general", "日期", mp.AppID, startDate)
@@ -1512,10 +1530,17 @@ func executeFetch(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			programDuration := time.Now().UnixMilli() - programStartTime
+			logChan <- fmt.Sprintf("\n====== %s 数据拉取完成 ======", mp.Name)
+			logChan <- fmt.Sprintf("耗时: %s", formatDuration(programDuration))
+
 			time.Sleep(500 * time.Millisecond)
 		}
 
-		logChan <- "\n🎉 所有任务执行完成！"
+		mainDuration := time.Now().UnixMilli() - mainStartTime
+		logChan <- "\n========== 全部数据拉取完成 =========="
+		logChan <- fmt.Sprintf("完成时间: %s", time.Now().Format("2006-01-02 15:04:05"))
+		logChan <- fmt.Sprintf("总耗时: %s", formatDuration(mainDuration))
 	}()
 
 	// 实时发送日志
