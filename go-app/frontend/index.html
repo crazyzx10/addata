@@ -829,9 +829,18 @@
                     lines.forEach(line => {
                         // 检查是否是进度更新
                         if (line.startsWith('[PROGRESS]')) {
-                            const parts = line.substring(10).split(' ');
-                            const percent = parseInt(parts[0]);
+                            const parts = line.substring(11).split(' ');
+                            let percent = parseInt(parts[0]);
                             const statusMsg = parts.slice(1).join(' ');
+                            
+                            // 确保百分比是有效数字
+                            if (isNaN(percent)) {
+                                percent = 0;
+                            } else if (percent < 0) {
+                                percent = 0;
+                            } else if (percent > 100) {
+                                percent = 100;
+                            }
                             
                             progressPercent.textContent = `${percent}%`;
                             progressBar.style.width = `${percent}%`;
