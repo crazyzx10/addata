@@ -502,6 +502,28 @@ func getTokenWithCache(appid, appsecret string) (string, error) {
 	return token, nil
 }
 
+func cleanupExpiredTokens() {
+	now := time.Now().UnixNano() / 1e6
+	tokenCaches.Range(func(key, value interface{}) bool {
+		cache := value.(tokenCache)
+		if now >= cache.expireTime {
+			tokenCaches.Delete(key)
+			log.Printf("[cleanupExpiredTokens] 已清理过期Token - AppID: %v", key)
+		}
+		return true
+	})
+}
+
+func startTokenCleanupJob() {
+	ticker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for range ticker.C {
+			cleanupExpiredTokens()
+		}
+	}()
+	log.Println("[TokenCleanup] Token清理任务已启动（每5分钟执行一次）")
+}
+
 func fetchDataWithRetry(token, action, appid, appsecret, apiBase string, extraParams map[string]string) (map[string]interface{}, error) {
 	currentToken := token
 	retryCount := 0
@@ -693,98 +715,113 @@ func saveAdunitList(db *sql.DB, name, appid string, list []map[string]interface{
 		return nil
 	}
 	
-	for _, item := range list {
-		adUnitID := ""
-		if v, ok := item["ad_unit_id"].(string); ok {
-			adUnitID = v
+	batchSize := 100
+	for i := 0; i < len(list); i += batchSize {
+		end := i + batchSize
+		if end > len(list) {
+			end = len(list)
 		}
+		batch := list[i:end]
 		
-		adUnitName := ""
-		if v, ok := item["ad_unit_name"].(string); ok {
-			adUnitName = v
-		}
+		valueStrings := make([]string, 0, len(batch))
+		valueArgs := make([]interface{}, 0, len(batch)*15)
 		
-		adSlot := ""
-		if v, ok := item["ad_slot"].(string); ok {
-			adSlot = v
-		}
-		
-		adSlotName := AD_SLOT_NAMES[adSlot]
-		if adSlotName == "" {
-			adSlotName = adSlot
-		}
-		
-		adUnitType := ""
-		if v, ok := item["ad_unit_type"].(string); ok {
-			adUnitType = v
-		}
-		
-		adUnitStatus := ""
-		if v, ok := item["ad_unit_status"].(string); ok {
-			adUnitStatus = v
-		}
-		
-		statusName := AD_STATUS_NAMES[adUnitStatus]
-		if statusName == "" {
-			statusName = adUnitStatus
-		}
-		
-		slotID := ""
-		if v, ok := item["slot_id"].(string); ok {
-			slotID = v
-		}
-		
-		adUnitSize := ""
-		if v, ok := item["ad_unit_size"].([]interface{}); ok {
-			sizeData, _ := json.Marshal(v)
-			adUnitSize = string(sizeData)
-		}
-		
-		allowPlayable := 0
-		if v, ok := item["is_allow_playable"].(bool); ok && v {
-			allowPlayable = 1
-		}
-		
-		videoMin := 0
-		if v, ok := item["video_duration_min"].(float64); ok {
-			videoMin = int(v)
-		}
-		
-		videoMax := 0
-		if v, ok := item["video_duration_max"].(float64); ok {
-			videoMax = int(v)
-		}
-		
-		templTypeList := ""
-		if v, ok := item["templ_type_list"].([]interface{}); ok {
-			var types []string
-			for _, t := range v {
-				if s, ok := t.(string); ok {
-					types = append(types, s)
+		for _, item := range batch {
+			adUnitID := ""
+			if v, ok := item["ad_unit_id"].(string); ok {
+				adUnitID = v
+			}
+			
+			adUnitName := ""
+			if v, ok := item["ad_unit_name"].(string); ok {
+				adUnitName = v
+			}
+			
+			adSlot := ""
+			if v, ok := item["ad_slot"].(string); ok {
+				adSlot = v
+			}
+			
+			adSlotName := AD_SLOT_NAMES[adSlot]
+			if adSlotName == "" {
+				adSlotName = adSlot
+			}
+			
+			adUnitType := ""
+			if v, ok := item["ad_unit_type"].(string); ok {
+				adUnitType = v
+			}
+			
+			adUnitStatus := ""
+			if v, ok := item["ad_unit_status"].(string); ok {
+				adUnitStatus = v
+			}
+			
+			statusName := AD_STATUS_NAMES[adUnitStatus]
+			if statusName == "" {
+				statusName = adUnitStatus
+			}
+			
+			slotID := ""
+			if v, ok := item["slot_id"].(string); ok {
+				slotID = v
+			}
+			
+			adUnitSize := ""
+			if v, ok := item["ad_unit_size"].([]interface{}); ok {
+				sizeData, _ := json.Marshal(v)
+				adUnitSize = string(sizeData)
+			}
+			
+			allowPlayable := 0
+			if v, ok := item["is_allow_playable"].(bool); ok && v {
+				allowPlayable = 1
+			}
+			
+			videoMin := 0
+			if v, ok := item["video_duration_min"].(float64); ok {
+				videoMin = int(v)
+			}
+			
+			videoMax := 0
+			if v, ok := item["video_duration_max"].(float64); ok {
+				videoMax = int(v)
+			}
+			
+			templTypeList := ""
+			if v, ok := item["templ_type_list"].([]interface{}); ok {
+				var types []string
+				for _, t := range v {
+					if s, ok := t.(string); ok {
+						types = append(types, s)
+					}
+				}
+				templTypeList = ""
+				for i, t := range types {
+					if i > 0 {
+						templTypeList += ","
+					}
+					templTypeList += t
 				}
 			}
-			templTypeList = ""
-			for i, t := range types {
-				if i > 0 {
-					templTypeList += ","
-				}
-				templTypeList += t
-			}
+			
+			valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			valueArgs = append(valueArgs, name, appid, adUnitID, adUnitName, adSlot, adSlotName, adUnitType, adUnitStatus, statusName, slotID, adUnitSize, allowPlayable, videoMin, videoMax, templTypeList)
 		}
 		
-		_, err := db.Exec(`
-			INSERT INTO adunit_list (小程序名称, 小程序ID, 广告位唯一ID, 广告位名称, 广告位类型枚举, 广告位类型,
-				广告位类型值, 状态, 状态名称, 广告位数字ID, 广告尺寸, 是否允许可播放,
-				视频最短时长, 视频最长时长, 模版类型列表)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		query := `INSERT INTO adunit_list (小程序名称, 小程序ID, 广告位唯一ID, 广告位名称, 广告位类型枚举, 广告位类型,
+			广告位类型值, 状态, 状态名称, 广告位数字ID, 广告尺寸, 是否允许可播放,
+			视频最短时长, 视频最长时长, 模版类型列表)
+			VALUES ` + strings.Join(valueStrings, ",") + `
 			ON DUPLICATE KEY UPDATE
 				广告位名称 = VALUES(广告位名称),
 				广告位类型枚举 = VALUES(广告位类型枚举),
 				广告位类型 = VALUES(广告位类型),
 				状态 = VALUES(状态),
 				状态名称 = VALUES(状态名称),
-				更新时间 = CURRENT_TIMESTAMP
-		`, name, appid, adUnitID, adUnitName, adSlot, adSlotName, adUnitType, adUnitStatus, statusName, slotID, adUnitSize, allowPlayable, videoMin, videoMax, templTypeList)
+				更新时间 = CURRENT_TIMESTAMP`
+		
+		_, err := db.Exec(query, valueArgs...)
 		if err != nil {
 			return err
 		}
@@ -798,72 +835,86 @@ func saveSummaryData(db *sql.DB, name, appid string, list []map[string]interface
 		return nil
 	}
 
-	for _, item := range list {
-		dateVal := ""
-		if v, ok := item["date"].(string); ok {
-			if len(v) >= 10 {
-				dateVal = v[:10]
-			} else {
-				dateVal = v
+	batchSize := 100
+	for i := 0; i < len(list); i += batchSize {
+		end := i + batchSize
+		if end > len(list) {
+			end = len(list)
+		}
+		batch := list[i:end]
+		
+		valueStrings := make([]string, 0, len(batch))
+		valueArgs := make([]interface{}, 0, len(batch)*15)
+		
+		for _, item := range batch {
+			dateVal := ""
+			if v, ok := item["date"].(string); ok {
+				if len(v) >= 10 {
+					dateVal = v[:10]
+				} else {
+					dateVal = v
+				}
 			}
+			
+			adSlot := ""
+			if v, ok := item["ad_slot"].(string); ok {
+				adSlot = v
+			}
+			
+			adSlotName := AD_SLOT_NAMES[adSlot]
+			if adSlotName == "" {
+				adSlotName = adSlot
+			}
+			
+			slotStr := ""
+			if v, ok := item["slot_str"].(string); ok {
+				slotStr = v
+			} else if v, ok := item["slot_id"].(float64); ok {
+				slotStr = fmt.Sprintf("%d", int(v))
+			}
+			
+			reqSuccCount := 0
+			if v, ok := item["req_succ_count"].(float64); ok {
+				reqSuccCount = int(v)
+			}
+			
+			exposureCount := 0
+			if v, ok := item["exposure_count"].(float64); ok {
+				exposureCount = int(v)
+			}
+			
+			exposureRate := 0.0
+			if v, ok := item["exposure_rate"].(float64); ok {
+				exposureRate = v
+			}
+			
+			clickCount := 0
+			if v, ok := item["click_count"].(float64); ok {
+				clickCount = int(v)
+			}
+			
+			clickRate := 0.0
+			if v, ok := item["click_rate"].(float64); ok {
+				clickRate = v
+			}
+			
+			income := 0
+			if v, ok := item["income"].(float64); ok {
+				income = int(v)
+			}
+			
+			ecpm := 0.0
+			if v, ok := item["ecpm"].(float64); ok {
+				ecpm = v
+			}
+			
+			valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			valueArgs = append(valueArgs, name, appid, dateVal, adSlot, adSlotName, slotStr, reqSuccCount, exposureCount, formatRate(exposureRate), clickCount, formatRate(clickRate), income, fenToYuan(float64(income)), ecpm, fenToYuan(ecpm))
 		}
 		
-		adSlot := ""
-		if v, ok := item["ad_slot"].(string); ok {
-			adSlot = v
-		}
-		
-		adSlotName := AD_SLOT_NAMES[adSlot]
-		if adSlotName == "" {
-			adSlotName = adSlot
-		}
-		
-		slotStr := ""
-		if v, ok := item["slot_str"].(string); ok {
-			slotStr = v
-		} else if v, ok := item["slot_id"].(float64); ok {
-			slotStr = fmt.Sprintf("%d", int(v))
-		}
-		
-		reqSuccCount := 0
-		if v, ok := item["req_succ_count"].(float64); ok {
-			reqSuccCount = int(v)
-		}
-		
-		exposureCount := 0
-		if v, ok := item["exposure_count"].(float64); ok {
-			exposureCount = int(v)
-		}
-		
-		exposureRate := 0.0
-		if v, ok := item["exposure_rate"].(float64); ok {
-			exposureRate = v
-		}
-		
-		clickCount := 0
-		if v, ok := item["click_count"].(float64); ok {
-			clickCount = int(v)
-		}
-		
-		clickRate := 0.0
-		if v, ok := item["click_rate"].(float64); ok {
-			clickRate = v
-		}
-		
-		income := 0
-		if v, ok := item["income"].(float64); ok {
-			income = int(v)
-		}
-		
-		ecpm := 0.0
-		if v, ok := item["ecpm"].(float64); ok {
-			ecpm = v
-		}
-		
-		_, err := db.Exec(`
-			INSERT INTO publisher_adpos_general (小程序名称, 小程序ID, 日期, 广告位类型枚举, 广告位类型, 广告位数字ID,
-				成功请求次数, 曝光量, 曝光率, 点击量, 点击率, 总收入分, 总收入元, 千次曝光收入分, 千次曝光收入元)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		query := `INSERT INTO publisher_adpos_general (小程序名称, 小程序ID, 日期, 广告位类型枚举, 广告位类型, 广告位数字ID,
+			成功请求次数, 曝光量, 曝光率, 点击量, 点击率, 总收入分, 总收入元, 千次曝光收入分, 千次曝光收入元)
+			VALUES ` + strings.Join(valueStrings, ",") + `
 			ON DUPLICATE KEY UPDATE
 				广告位类型 = VALUES(广告位类型),
 				成功请求次数 = VALUES(成功请求次数),
@@ -874,8 +925,9 @@ func saveSummaryData(db *sql.DB, name, appid string, list []map[string]interface
 				总收入分 = VALUES(总收入分),
 				总收入元 = VALUES(总收入元),
 				千次曝光收入分 = VALUES(千次曝光收入分),
-				千次曝光收入元 = VALUES(千次曝光收入元)
-		`, name, appid, dateVal, adSlot, adSlotName, slotStr, reqSuccCount, exposureCount, formatRate(exposureRate), clickCount, formatRate(clickRate), income, fenToYuan(float64(income)), ecpm, fenToYuan(ecpm))
+				千次曝光收入元 = VALUES(千次曝光收入元)`
+		
+		_, err := db.Exec(query, valueArgs...)
 		if err != nil {
 			return err
 		}
@@ -889,134 +941,148 @@ func saveDetailData(db *sql.DB, name, appid string, list []map[string]interface{
 		return nil
 	}
 	
-	for _, item := range list {
-		adUnitID := ""
-		if v, ok := item["ad_unit_id"].(string); ok {
-			adUnitID = v
+	batchSize := 100
+	for i := 0; i < len(list); i += batchSize {
+		end := i + batchSize
+		if end > len(list) {
+			end = len(list)
 		}
+		batch := list[i:end]
 		
-		adUnitName := ""
-		if v, ok := item["ad_unit_name"].(string); ok {
-			adUnitName = v
-		}
+		valueStrings := make([]string, 0, len(batch))
+		valueArgs := make([]interface{}, 0, len(batch)*22)
 		
-		var statItem map[string]interface{}
-		if v, ok := item["stat_item"].(map[string]interface{}); ok {
-			statItem = v
-		}
-		
-		dateVal := ""
-		if statItem != nil {
-			if v, ok := statItem["date"].(string); ok {
-				if len(v) >= 10 {
-					dateVal = v[:10]
-				} else {
-					dateVal = v
+		for _, item := range batch {
+			adUnitID := ""
+			if v, ok := item["ad_unit_id"].(string); ok {
+				adUnitID = v
+			}
+			
+			adUnitName := ""
+			if v, ok := item["ad_unit_name"].(string); ok {
+				adUnitName = v
+			}
+			
+			var statItem map[string]interface{}
+			if v, ok := item["stat_item"].(map[string]interface{}); ok {
+				statItem = v
+			}
+			
+			dateVal := ""
+			if statItem != nil {
+				if v, ok := statItem["date"].(string); ok {
+					if len(v) >= 10 {
+						dateVal = v[:10]
+					} else {
+						dateVal = v
+					}
 				}
 			}
-		}
-		
-		adSlot := ""
-		if statItem != nil {
-			if v, ok := statItem["ad_slot"].(string); ok {
-				adSlot = v
+			
+			adSlot := ""
+			if statItem != nil {
+				if v, ok := statItem["ad_slot"].(string); ok {
+					adSlot = v
+				}
 			}
-		}
-		
-		adSlotName := AD_SLOT_NAMES[adSlot]
-		if adSlotName == "" {
-			adSlotName = adSlot
-		}
-		
-		slotStr := ""
-		if statItem != nil {
-			if v, ok := statItem["slot_str"].(string); ok {
-				slotStr = v
+			
+			adSlotName := AD_SLOT_NAMES[adSlot]
+			if adSlotName == "" {
+				adSlotName = adSlot
 			}
-		}
-		
-		reqSuccCount := 0
-		if statItem != nil {
-			if v, ok := statItem["req_succ_count"].(float64); ok {
-				reqSuccCount = int(v)
+			
+			slotStr := ""
+			if statItem != nil {
+				if v, ok := statItem["slot_str"].(string); ok {
+					slotStr = v
+				}
 			}
-		}
-		
-		exposureCount := 0
-		if statItem != nil {
-			if v, ok := statItem["exposure_count"].(float64); ok {
-				exposureCount = int(v)
+			
+			reqSuccCount := 0
+			if statItem != nil {
+				if v, ok := statItem["req_succ_count"].(float64); ok {
+					reqSuccCount = int(v)
+				}
 			}
-		}
-		
-		exposureRate := 0.0
-		if statItem != nil {
-			if v, ok := statItem["exposure_rate"].(float64); ok {
-				exposureRate = v
+			
+			exposureCount := 0
+			if statItem != nil {
+				if v, ok := statItem["exposure_count"].(float64); ok {
+					exposureCount = int(v)
+				}
 			}
-		}
-		
-		clickCount := 0
-		if statItem != nil {
-			if v, ok := statItem["click_count"].(float64); ok {
-				clickCount = int(v)
+			
+			exposureRate := 0.0
+			if statItem != nil {
+				if v, ok := statItem["exposure_rate"].(float64); ok {
+					exposureRate = v
+				}
 			}
-		}
-		
-		clickRate := 0.0
-		if statItem != nil {
-			if v, ok := statItem["click_rate"].(float64); ok {
-				clickRate = v
+			
+			clickCount := 0
+			if statItem != nil {
+				if v, ok := statItem["click_count"].(float64); ok {
+					clickCount = int(v)
+				}
 			}
-		}
-		
-		income := 0
-		if statItem != nil {
-			if v, ok := statItem["income"].(float64); ok {
-				income = int(v)
+			
+			clickRate := 0.0
+			if statItem != nil {
+				if v, ok := statItem["click_rate"].(float64); ok {
+					clickRate = v
+				}
 			}
-		}
-		
-		publisherIncome := 0
-		if statItem != nil {
-			if v, ok := statItem["publisher_income"].(float64); ok {
-				publisherIncome = int(v)
+			
+			income := 0
+			if statItem != nil {
+				if v, ok := statItem["income"].(float64); ok {
+					income = int(v)
+				}
 			}
-		}
-		
-		agencyIncome := 0
-		if statItem != nil {
-			if v, ok := statItem["agency_income"].(float64); ok {
-				agencyIncome = int(v)
+			
+			publisherIncome := 0
+			if statItem != nil {
+				if v, ok := statItem["publisher_income"].(float64); ok {
+					publisherIncome = int(v)
+				}
 			}
-		}
-		
-		ecpm := 0.0
-		if statItem != nil {
-			if v, ok := statItem["ecpm"].(float64); ok {
-				ecpm = v
+			
+			agencyIncome := 0
+			if statItem != nil {
+				if v, ok := statItem["agency_income"].(float64); ok {
+					agencyIncome = int(v)
+				}
 			}
-		}
-		
-		isSmartAds := 0
-		if statItem != nil {
-			if v, ok := statItem["is_smart_ads"].(float64); ok && v != 0 {
-				isSmartAds = 1
+			
+			ecpm := 0.0
+			if statItem != nil {
+				if v, ok := statItem["ecpm"].(float64); ok {
+					ecpm = v
+				}
 			}
-		}
-		
-		parentTemplType := ""
-		if statItem != nil {
-			if v, ok := statItem["parent_templ_type"].(string); ok {
-				parentTemplType = v
+			
+			isSmartAds := 0
+			if statItem != nil {
+				if v, ok := statItem["is_smart_ads"].(float64); ok && v != 0 {
+					isSmartAds = 1
+				}
 			}
+			
+			parentTemplType := ""
+			if statItem != nil {
+				if v, ok := statItem["parent_templ_type"].(string); ok {
+					parentTemplType = v
+				}
+			}
+			
+			valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			valueArgs = append(valueArgs, name, appid, adUnitID, adUnitName, dateVal, adSlot, adSlotName, slotStr, reqSuccCount, exposureCount, formatRate(exposureRate), clickCount, formatRate(clickRate), income, fenToYuan(float64(income)), publisherIncome, fenToYuan(float64(publisherIncome)), agencyIncome, ecpm, fenToYuan(ecpm), isSmartAds, parentTemplType)
 		}
 		
-		_, err := db.Exec(`
-			INSERT INTO publisher_adunit_general (小程序名称, 小程序ID, 广告位唯一ID, 广告位名称, 日期,
-				广告位类型枚举, 广告位类型, 广告位数字ID, 成功请求次数, 曝光量, 曝光率, 点击量, 点击率,
-				总收入分, 总收入元, 流量主收入分, 流量主收入元, 代理商收入分, 千次曝光收入分, 千次曝光收入元, 是否智能广告, 父模版类型)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		query := `INSERT INTO publisher_adunit_general (小程序名称, 小程序ID, 广告位唯一ID, 广告位名称, 日期,
+			广告位类型枚举, 广告位类型, 广告位数字ID, 成功请求次数, 曝光量, 曝光率, 点击量, 点击率,
+			总收入分, 总收入元, 流量主收入分, 流量主收入元, 代理商收入分, 千次曝光收入分, 千次曝光收入元, 是否智能广告, 父模版类型)
+			VALUES ` + strings.Join(valueStrings, ",") + `
 			ON DUPLICATE KEY UPDATE
 				广告位名称 = VALUES(广告位名称),
 				广告位类型 = VALUES(广告位类型),
@@ -1033,8 +1099,9 @@ func saveDetailData(db *sql.DB, name, appid string, list []map[string]interface{
 				千次曝光收入分 = VALUES(千次曝光收入分),
 				千次曝光收入元 = VALUES(千次曝光收入元),
 				是否智能广告 = VALUES(是否智能广告),
-				父模版类型 = VALUES(父模版类型)
-		`, name, appid, adUnitID, adUnitName, dateVal, adSlot, adSlotName, slotStr, reqSuccCount, exposureCount, formatRate(exposureRate), clickCount, formatRate(clickRate), income, fenToYuan(float64(income)), publisherIncome, fenToYuan(float64(publisherIncome)), agencyIncome, ecpm, fenToYuan(ecpm), isSmartAds, parentTemplType)
+				父模版类型 = VALUES(父模版类型)`
+		
+		_, err := db.Exec(query, valueArgs...)
 		if err != nil {
 			return err
 		}
@@ -1105,7 +1172,30 @@ func logFetch(db *sql.DB, name, appid, fetchType, fetchDate, status string, tota
 	return err
 }
 
+var allowedTables = map[string]bool{
+	"publisher_adpos_general":    true,
+	"publisher_adunit_general":   true,
+	"publisher_settlement":       true,
+	"adunit_list":                true,
+	"mini_program":               true,
+	"fetch_log":                  true,
+}
+
+var allowedColumns = map[string]bool{
+	"日期":         true,
+	"data拉取日期": true,
+}
+
 func getLatestDataDate(db *sql.DB, tableName, dateColumn, appid string, defaultDate string) string {
+	if !allowedTables[tableName] {
+		log.Printf("[getLatestDataDate] 不允许的数据表名: %s", tableName)
+		return defaultDate
+	}
+	if !allowedColumns[dateColumn] {
+		log.Printf("[getLatestDataDate] 不允许的字段名: %s", dateColumn)
+		return defaultDate
+	}
+	
 	var latestDate sql.NullString
 	query := fmt.Sprintf(`SELECT MAX(%s) as latest_date FROM %s WHERE 小程序ID = ?`, dateColumn, tableName)
 	
@@ -1459,6 +1549,9 @@ func openBrowser(url string) error {
 }
 
 func main() {
+	// 启动Token清理任务
+	startTokenCleanupJob()
+	
 	// 配置路由
 	http.Handle("/", http.FileServer(http.FS(frontendFS)))
 	http.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
