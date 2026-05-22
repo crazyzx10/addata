@@ -287,14 +287,18 @@
             max-width: 1080px;
             margin: 0 auto;
         }
-        
+
         .toggle-switch {
             position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            min-width: 44px;
+            height: 22px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
         }
-        
+
         .toggle-switch input {
             position: absolute;
             opacity: 0;
@@ -304,53 +308,98 @@
             z-index: 10;
             margin: 0;
         }
-        
+
         .toggle-slider {
             position: absolute;
-            cursor: pointer;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: var(--border);
-            transition: all 0.2s cubic-bezier(0.53, 1.16, 0.53, 1.16);
-            border-radius: 9999px;
-            border: 2px solid transparent;
+            background-color: rgba(0, 0, 0, 0.25);
+            border-radius: 11px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            padding: 2px;
         }
-        
+
         .toggle-slider:before {
             position: absolute;
             content: "";
             height: 18px;
             width: 18px;
-            left: 1px;
-            bottom: 1px;
+            left: 2px;
+            top: 2px;
             background-color: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s cubic-bezier(0.53, 1.16, 0.53, 1.16);
+            box-shadow: 0 2px 4px 0 rgba(0, 35, 11, 0.2);
+            transition: all 0.2s;
             border-radius: 50%;
+            z-index: 2;
         }
-        
+
+        .toggle-text {
+            font-size: 12px;
+            line-height: 1;
+            color: white;
+            font-weight: 400;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px 0 7px;
+            transition: all 0.2s;
+            z-index: 1;
+        }
+
+        .toggle-text-unchecked {
+            display: none;
+        }
+
         input:checked + .toggle-slider {
-            background-color: var(--accent);
-            border-color: var(--accent);
+            background-color: #1677ff;
         }
-        
-        input:focus + .toggle-slider {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-        
+
         input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-            background-color: white;
+            transform: translateX(22px);
         }
-        
+
+        input:checked + .toggle-slider .toggle-text {
+            padding: 0 7px 0 20px;
+        }
+
+        input:checked + .toggle-slider .toggle-text-checked {
+            display: flex;
+        }
+
+        input:checked + .toggle-slider .toggle-text-unchecked {
+            display: none;
+        }
+
+        input:not(:checked) + .toggle-slider .toggle-text-checked {
+            display: none;
+        }
+
+        input:not(:checked) + .toggle-slider .toggle-text-unchecked {
+            display: flex;
+        }
+
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
+        }
+
         input:disabled + .toggle-slider {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
-        
+
+        [data-theme="dark"] .toggle-slider {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        [data-theme="dark"] input:checked + .toggle-slider {
+            background-color: #177ddc;
+        }
+
         .btn.btn-small {
             padding: 10px 8px;
             font-size: 13px;
@@ -363,7 +412,7 @@
             gap: 4px;
             flex-shrink: 0;
         }
-        
+
         .log-small-text {
             font-size: 13px;
         }
@@ -731,7 +780,10 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox" checked>
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">开启</span>
+                                                <span class="toggle-text toggle-text-unchecked">关闭</span>
+                                            </span>
                                         </label>
                                     </td>
                                     <td>
@@ -747,7 +799,10 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox">
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">开启</span>
+                                                <span class="toggle-text toggle-text-unchecked">关闭</span>
+                                            </span>
                                         </label>
                                     </td>
                                     <td>
@@ -862,7 +917,10 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox" checked>
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">开启</span>
+                                                <span class="toggle-text toggle-text-unchecked">关闭</span>
+                                            </span>
                                         </label>
                                     </td>
                                     <td>
@@ -875,7 +933,10 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox" checked>
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">开启</span>
+                                                <span class="toggle-text toggle-text-unchecked">关闭</span>
+                                            </span>
                                         </label>
                                     </td>
                                     <td>
