@@ -332,9 +332,10 @@
         }
         
         .btn-small {
-            padding: 6px 12px;
+            padding: 10px 12px;
             font-size: 13px;
-            width: 70px;
+            width: 80px;
+            height: 40px;
             text-align: center;
         }
 
@@ -680,10 +681,6 @@
                             <div class="stat-label">最后拉取</div>
                         </div>
                     </div>
-                    <div class="quick-action">
-                        <div class="quick-action-title">快速操作</div>
-                        <button class="btn btn-primary" onclick="navigateTo('execute')" style="width: 180px;">开始拉取数据</button>
-                    </div>
                 </div>
 
                 <div id="page-programs" style="display: none;">
@@ -751,21 +748,21 @@
                             </div>
                         </div>
                         <div class="btn-group" style="margin-top: 20px;">
-                            <button class="btn btn-secondary" id="btn-stop" style="width: 100px;">
-                                <i data-lucide="square" style="width: 16px; height: 16px; margin-right: 4px;"></i>
-                                中断
-                            </button>
-                            <button class="btn btn-secondary" id="btn-resume" style="width: 100px;">
-                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 4px;"></i>
-                                继续
-                            </button>
-                            <button class="btn btn-secondary" id="btn-restart" style="width: 100px;">
-                                <i data-lucide="rotate-cw" style="width: 16px; height: 16px; margin-right: 4px;"></i>
-                                重新拉取
-                            </button>
-                            <button class="btn btn-primary" id="btn-start" style="width: 100px;">
+                            <button class="btn btn-primary" id="btn-start" style="width: 120px; height: 40px;">
                                 <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 4px;"></i>
                                 开始拉取
+                            </button>
+                            <button class="btn btn-secondary" id="btn-stop" style="width: 120px; height: 40px;">
+                                <i data-lucide="square" style="width: 16px; height: 16px; margin-right: 4px;"></i>
+                                中断拉取
+                            </button>
+                            <button class="btn btn-secondary" id="btn-resume" style="width: 120px; height: 40px;">
+                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 4px;"></i>
+                                继续拉取
+                            </button>
+                            <button class="btn btn-secondary" id="btn-restart" style="width: 120px; height: 40px;">
+                                <i data-lucide="rotate-cw" style="width: 16px; height: 16px; margin-right: 4px;"></i>
+                                重新拉取
                             </button>
                         </div>
                         <div class="log-container" id="log-container">
