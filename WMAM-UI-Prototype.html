@@ -291,14 +291,18 @@
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 48px;
-            height: 26px;
+            width: 44px;
+            height: 24px;
         }
         
         .toggle-switch input {
+            position: absolute;
             opacity: 0;
-            width: 0;
-            height: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 10;
+            margin: 0;
         }
         
         .toggle-slider {
@@ -308,9 +312,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
-            transition: 0.3s;
-            border-radius: 26px;
+            background-color: var(--border);
+            transition: all 0.2s cubic-bezier(0.53, 1.16, 0.53, 1.16);
+            border-radius: 9999px;
+            border: 2px solid transparent;
         }
         
         .toggle-slider:before {
@@ -318,23 +323,32 @@
             content: "";
             height: 18px;
             width: 18px;
-            left: 4px;
-            bottom: 4px;
+            left: 1px;
+            bottom: 1px;
             background-color: white;
-            transition: 0.3s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s cubic-bezier(0.53, 1.16, 0.53, 1.16);
             border-radius: 50%;
         }
         
         input:checked + .toggle-slider {
-            background-color: var(--success);
+            background-color: var(--accent);
+            border-color: var(--accent);
         }
         
         input:focus + .toggle-slider {
-            box-shadow: 0 0 1px var(--success);
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
         
         input:checked + .toggle-slider:before {
-            transform: translateX(22px);
+            transform: translateX(20px);
+            background-color: white;
+        }
+        
+        input:disabled + .toggle-slider {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .btn.btn-small {
