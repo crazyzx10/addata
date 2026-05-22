@@ -332,11 +332,15 @@
         }
         
         .btn-small {
-            padding: 10px 12px;
+            padding: 10px 8px;
             font-size: 13px;
             width: 80px;
             height: 40px;
             text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
 
         .page-title {
@@ -626,9 +630,6 @@
                 <button class="theme-toggle" id="theme-toggle">
                     <i data-lucide="sun" class="theme-icon"></i>
                 </button>
-                <div class="user-menu">
-                    <div class="user-avatar">A</div>
-                </div>
             </div>
         </div>
         
@@ -748,21 +749,21 @@
                             </div>
                         </div>
                         <div class="btn-group" style="margin-top: 20px;">
-                            <button class="btn btn-primary" id="btn-start" style="width: 120px; height: 40px;">
-                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 4px;"></i>
-                                开始拉取
+                            <button class="btn btn-primary" id="btn-start" style="width: 120px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                                <span>开始拉取</span>
                             </button>
-                            <button class="btn btn-secondary" id="btn-stop" style="width: 120px; height: 40px;">
-                                <i data-lucide="square" style="width: 16px; height: 16px; margin-right: 4px;"></i>
-                                中断拉取
+                            <button class="btn btn-secondary" id="btn-stop" style="width: 120px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <i data-lucide="square" style="width: 16px; height: 16px;"></i>
+                                <span>中断拉取</span>
                             </button>
-                            <button class="btn btn-secondary" id="btn-resume" style="width: 120px; height: 40px;">
-                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 4px;"></i>
-                                继续拉取
+                            <button class="btn btn-secondary" id="btn-resume" style="width: 120px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                                <span>继续拉取</span>
                             </button>
-                            <button class="btn btn-secondary" id="btn-restart" style="width: 120px; height: 40px;">
-                                <i data-lucide="rotate-cw" style="width: 16px; height: 16px; margin-right: 4px;"></i>
-                                重新拉取
+                            <button class="btn btn-secondary" id="btn-restart" style="width: 120px; height: 40px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <i data-lucide="rotate-cw" style="width: 16px; height: 16px;"></i>
+                                <span>重新拉取</span>
                             </button>
                         </div>
                         <div class="log-container" id="log-container">
@@ -889,8 +890,8 @@
                             </div>
                         </div>
                         <div class="btn-group" id="admin-db-buttons" style="margin-top: 20px;">
-                            <button class="btn btn-primary" id="test-db-connection">测试连接</button>
-                            <button class="btn btn-secondary" id="save-db-config">保存配置</button>
+                            <button class="btn btn-primary" id="test-db-connection" style="width: 100px; height: 40px;">测试连接</button>
+                            <button class="btn btn-secondary" id="save-db-config" style="width: 100px; height: 40px;">保存配置</button>
                         </div>
                         <div style="margin-top: 15px; padding: 12px 16px; border-radius: 8px; font-size: 13px; background-color: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.3); color: #facc15;">
                             📊 连接状态: ⚪ 未测试
