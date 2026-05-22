@@ -278,6 +278,64 @@
             flex: 1;
             padding: 24px;
             overflow-y: auto;
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+        
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px var(--success);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+            width: 70px;
+            text-align: center;
         }
 
         .page-title {
@@ -540,9 +598,6 @@
         </button>
         <div class="login-container">
             <div class="login-header">
-                <div class="login-logo" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <i data-lucide="activity" style="width: 32px; height: 32px; color: white;"></i>
-                </div>
                 <div class="login-title">WMAM</div>
                 <div class="login-subtitle">微信广告数据管理系统</div>
             </div>
@@ -594,11 +649,15 @@
                     <i data-lucide="file-text" class="nav-icon"></i>
                     <span>操作日志</span>
                 </div>
-                <div class="nav-item" data-page="users">
-                    <i data-lucide="users" class="nav-icon"></i>
-                    <span>用户管理</span>
+                <div class="nav-item" data-page="database">
+                        <i data-lucide="database" class="nav-icon"></i>
+                        <span>数据库配置</span>
+                    </div>
+                    <div class="nav-item" data-page="users">
+                        <i data-lucide="users" class="nav-icon"></i>
+                        <span>用户管理</span>
+                    </div>
                 </div>
-            </div>
             
             <div class="main-content">
                 <div id="page-dashboard">
@@ -623,7 +682,7 @@
                     </div>
                     <div class="quick-action">
                         <div class="quick-action-title">快速操作</div>
-                        <button class="btn btn-primary" onclick="navigateTo('execute')">开始拉取数据</button>
+                        <button class="btn btn-primary" onclick="navigateTo('execute')" style="width: 180px;">开始拉取数据</button>
                     </div>
                 </div>
 
@@ -649,19 +708,29 @@
                                 <tr>
                                     <td>小程序 A</td>
                                     <td>wx1234567890abcdef</td>
-                                    <td><span class="badge badge-success"><i data-lucide="check" style="width: 12px; height: 12px;"></i> 正常</span></td>
                                     <td>
-                                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
-                                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">删除</button>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small">编辑</button>
+                                        <button class="btn btn-danger btn-small">删除</button>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>小程序 B</td>
                                     <td>wxabcdef1234567890</td>
-                                    <td><span class="badge badge-warning"><i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i> 待审核</span></td>
                                     <td>
-                                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
-                                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">删除</button>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small">编辑</button>
+                                        <button class="btn btn-danger btn-small">删除</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -672,26 +741,6 @@
                 <div id="page-execute" style="display: none;">
                     <h1 class="page-title">执行拉取</h1>
                     <div class="page-content">
-                        <div class="search-box">
-                            <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
-                            <input type="text" class="search-input" placeholder="搜索小程序...">
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
-                            <div class="stat-card">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>小程序 A</span>
-                                    <span class="badge badge-success"><i data-lucide="check" style="width: 12px; height: 12px;"></i> 就绪</span>
-                                </div>
-                                <div style="font-size: 12px; color: var(--text-muted);">wx1234567890abcdef</div>
-                            </div>
-                            <div class="stat-card">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <span>小程序 B</span>
-                                    <span class="badge badge-success"><i data-lucide="check" style="width: 12px; height: 12px;"></i> 就绪</span>
-                                </div>
-                                <div style="font-size: 12px; color: var(--text-muted);">wxabcdef1234567890</div>
-                            </div>
-                        </div>
                         <div class="progress-container">
                             <div class="progress-bar-bg">
                                 <div class="progress-bar" style="width: 65%"></div>
@@ -702,29 +751,27 @@
                             </div>
                         </div>
                         <div class="btn-group" style="margin-top: 20px;">
-                            <button class="btn btn-secondary" id="btn-stop">
-                                <i data-lucide="square" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+                            <button class="btn btn-secondary" id="btn-stop" style="width: 100px;">
+                                <i data-lucide="square" style="width: 16px; height: 16px; margin-right: 4px;"></i>
                                 中断
                             </button>
-                            <button class="btn btn-secondary" id="btn-resume">
-                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+                            <button class="btn btn-secondary" id="btn-resume" style="width: 100px;">
+                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 4px;"></i>
                                 继续
                             </button>
-                            <button class="btn btn-secondary" id="btn-restart">
-                                <i data-lucide="rotate-cw" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+                            <button class="btn btn-secondary" id="btn-restart" style="width: 100px;">
+                                <i data-lucide="rotate-cw" style="width: 16px; height: 16px; margin-right: 4px;"></i>
                                 重新拉取
                             </button>
-                            <button class="btn btn-primary" id="btn-start">
-                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+                            <button class="btn btn-primary" id="btn-start" style="width: 100px;">
+                                <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 4px;"></i>
                                 开始拉取
                             </button>
                         </div>
                         <div class="log-container" id="log-container">
                             <div class="log-line log-info">[2024-01-15 14:30:00] 系统准备就绪</div>
-                            <div class="log-line log-info">[2024-01-15 14:30:01] 开始拉取小程序 A 数据...</div>
-                            <div class="log-line log-success">[2024-01-15 14:30:05] ✅ 小程序 A 数据拉取成功</div>
-                            <div class="log-line log-info">[2024-01-15 14:30:06] 开始拉取小程序 B 数据...</div>
-                            <div class="log-line log-success">[2024-01-15 14:30:10] ✅ 小程序 B 数据拉取成功</div>
+                            <div class="log-line log-info">[2024-01-15 14:30:01] 开始拉取小程序数据...</div>
+                            <div class="log-line log-success">[2024-01-15 14:30:05] ✅ 数据拉取成功</div>
                             <div class="log-line log-info">[2024-01-15 14:30:11] 数据拉取完成</div>
                         </div>
                     </div>
@@ -788,22 +835,69 @@
                                 <tr>
                                     <td>admin</td>
                                     <td><span class="badge badge-warning"><i data-lucide="shield" style="width: 12px; height: 12px;"></i> 管理员</span></td>
-                                    <td><span class="badge badge-success"><i data-lucide="check" style="width: 12px; height: 12px;"></i> 活跃</span></td>
                                     <td>
-                                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small">编辑</button>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>userA</td>
                                     <td><span class="badge badge-info" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6;"><i data-lucide="user" style="width: 12px; height: 12px;"></i> 普通用户</span></td>
-                                    <td><span class="badge badge-success"><i data-lucide="check" style="width: 12px; height: 12px;"></i> 活跃</span></td>
                                     <td>
-                                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
-                                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">禁用</button>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small">编辑</button>
+                                        <button class="btn btn-danger btn-small">禁用</button>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <div id="page-database" style="display: none;">
+                    <h1 class="page-title">数据库配置</h1>
+                    <div class="page-content">
+                        <div class="form-group">
+                            <label class="form-label">主机地址</label>
+                            <input type="text" class="form-input" id="db-host" value="******************" readonly>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group">
+                                <label class="form-label">端口号</label>
+                                <input type="text" class="form-input" id="db-port" value="****" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">数据库名</label>
+                                <input type="text" class="form-input" id="db-name" value="*******" readonly>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group">
+                                <label class="form-label">用户名</label>
+                                <input type="text" class="form-input" id="db-user" value="********" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">密码</label>
+                                <input type="text" class="form-input" id="db-password" value="****************" readonly>
+                            </div>
+                        </div>
+                        <div class="btn-group" id="admin-db-buttons" style="margin-top: 20px;">
+                            <button class="btn btn-primary" id="test-db-connection">测试连接</button>
+                            <button class="btn btn-secondary" id="save-db-config">保存配置</button>
+                        </div>
+                        <div style="margin-top: 15px; padding: 12px 16px; border-radius: 8px; font-size: 13px; background-color: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.3); color: #facc15;">
+                            📊 连接状态: ⚪ 未测试
+                        </div>
                     </div>
                 </div>
             </div>
