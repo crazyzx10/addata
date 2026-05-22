@@ -292,9 +292,9 @@
             position: relative;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 22px;
+            min-width: 52px;
+            width: 52px;
+            height: 24px;
             cursor: pointer;
             user-select: none;
             transition: all 0.2s;
@@ -317,24 +317,43 @@
             right: 0;
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.25);
-            border-radius: 11px;
+            border-radius: 12px;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
             padding: 2px;
         }
 
         .toggle-slider:before {
-            position: relative;
+            position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            top: 2px;
             background-color: white;
             box-shadow: 0 2px 4px 0 rgba(0, 35, 11, 0.2);
-            transition: transform 0.2s;
+            transition: all 0.2s;
             border-radius: 50%;
-            flex-shrink: 0;
+            z-index: 2;
+        }
+
+        .toggle-text {
+            font-size: 12px;
+            line-height: 1;
+            color: white;
+            font-weight: 400;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 26px 0 8px;
+            transition: all 0.2s;
+            z-index: 1;
+        }
+
+        .toggle-text-unchecked {
+            display: none;
         }
 
         input:checked + .toggle-slider {
@@ -342,7 +361,27 @@
         }
 
         input:checked + .toggle-slider:before {
-            transform: translateX(22px);
+            transform: translateX(28px);
+        }
+
+        input:checked + .toggle-slider .toggle-text {
+            padding: 0 8px 0 26px;
+        }
+
+        input:checked + .toggle-slider .toggle-text-checked {
+            display: flex;
+        }
+
+        input:checked + .toggle-slider .toggle-text-unchecked {
+            display: none;
+        }
+
+        input:not(:checked) + .toggle-slider .toggle-text-checked {
+            display: none;
+        }
+
+        input:not(:checked) + .toggle-slider .toggle-text-unchecked {
+            display: flex;
         }
 
         input:focus + .toggle-slider {
@@ -360,17 +399,6 @@
 
         [data-theme="dark"] input:checked + .toggle-slider {
             background-color: #177ddc;
-        }
-
-        .toggle-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-left: 8px;
-        }
-
-        .table td:has(.toggle-switch) {
-            display: flex;
-            align-items: center;
         }
 
         .btn.btn-small {
@@ -753,9 +781,11 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox" checked>
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">启用</span>
+                                                <span class="toggle-text toggle-text-unchecked">禁用</span>
+                                            </span>
                                         </label>
-                                        <span class="toggle-label">启用</span>
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 10px;">
@@ -770,9 +800,11 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox">
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">启用</span>
+                                                <span class="toggle-text toggle-text-unchecked">禁用</span>
+                                            </span>
                                         </label>
-                                        <span class="toggle-label">禁用</span>
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 10px;">
@@ -886,9 +918,11 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox" checked>
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">启用</span>
+                                                <span class="toggle-text toggle-text-unchecked">禁用</span>
+                                            </span>
                                         </label>
-                                        <span class="toggle-label">启用</span>
                                     </td>
                                     <td>
                                         <button class="btn btn-secondary btn-small">编辑</button>
@@ -900,9 +934,11 @@
                                     <td>
                                         <label class="toggle-switch">
                                             <input type="checkbox" checked>
-                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-slider">
+                                                <span class="toggle-text toggle-text-checked">启用</span>
+                                                <span class="toggle-text toggle-text-unchecked">禁用</span>
+                                            </span>
                                         </label>
-                                        <span class="toggle-label">启用</span>
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 10px;">
@@ -1036,15 +1072,6 @@
 
         document.getElementById('modal-confirm').addEventListener('click', () => {
             document.getElementById('modal-overlay').style.display = 'none';
-        });
-
-        document.querySelectorAll('.toggle-switch input').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const label = this.parentElement.nextElementSibling;
-                if (label && label.classList.contains('toggle-label')) {
-                    label.textContent = this.checked ? '启用' : '禁用';
-                }
-            });
         });
 
         initTheme();
