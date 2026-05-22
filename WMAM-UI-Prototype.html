@@ -144,20 +144,22 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            background-color: var(--bg-card);
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            background-color: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            color: var(--text-secondary);
             transition: all 0.2s ease;
         }
 
         .theme-toggle-login:hover {
             background-color: var(--bg-hover);
+            color: var(--text-primary);
         }
 
         #main-app {
@@ -626,9 +628,6 @@
     <div id="main-app">
         <div class="header">
             <div class="header-left">
-                <div class="app-logo" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <i data-lucide="activity" style="width: 18px; height: 18px; color: white;"></i>
-                </div>
                 <span class="app-title">WMAM</span>
             </div>
             <div class="header-right">
