@@ -1,6 +1,6 @@
 # WMAM 多用户系统 PRD
 
-**版本**：v1.0  
+**版本**：v1.1  
 **日期**：2026-05-22  
 **作者**：WMAM 开发团队  
 **状态**：草稿
@@ -50,6 +50,9 @@ WMAM（微信小程序广告数据管理工具）目前是一个单文件本地 
 | 编辑小程序 | ✅ | ❌ |
 | 删除小程序 | ✅ | ❌ |
 | 执行数据拉取 | ✅ | ✅ |
+| 中断拉取 | ✅ | ✅ |
+| 继续拉取 | ✅ | ✅ |
+| 重新拉取 | ✅ | ❌ |
 | 查看操作日志 | ✅ | ✅（仅自己） |
 | 用户管理 | ✅ | ❌ |
 | 查看他人操作日志 | ✅ | ❌ |
@@ -195,7 +198,102 @@ func (l *FetchLock) Release(username string) bool {
 }
 ```
 
-#### 3.3.2 拉取状态展示
+#### 3.3.2 拉取中断功能
+
+**功能描述**：用户或管理员可在拉取过程中随时中断，支持断点续传
+
+**中断流程**：
+1. 用户点击"中断执行"按钮
+2. 系统发送中断信号，停止当前拉取
+3. 记录中断点和已完成的进度
+4. 释放锁，提示中断成功
+5. 用户可再次点击"继续拉取"，从断点继续
+
+**断点续传机制**：
+1. 记录当前处理的小程序索引
+2. 每个小程序记录4种数据的拉取状态：
+   - 广告位清单（adunit_list）
+   - 汇总数据（publisher_adpos_general）
+   - 细分数据（publisher_adunit_general）
+   - 结算数据（publisher_settlement）
+3. 中断后再次拉取，跳过已完成的步骤
+
+**数据表设计**：
+
+```sql
+CREATE TABLE fetch_progress (
+    id INT PRIMARY KEY DEFAULT 1,
+    current_program_index INT DEFAULT 0 COMMENT '当前处理的小程序索引',
+    program_names TEXT COMMENT '逗号分隔的小程序名称列表',
+    program_ids TEXT COMMENT '逗号分隔的小程序ID列表',
+    adunit_list_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    summary_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    detail_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    settlement_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    current_data_type VARCHAR(50) COMMENT '当前正在拉取的数据类型',
+    locked_by VARCHAR(50) COMMENT '当前锁定者',
+    locked_at DATETIME COMMENT '锁定时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT single_row CHECK (id = 1)
+);
+```
+
+**中断场景示例**：
+```
+场景：配置了3个小程序，正在拉取第2个小程序的汇总数据时中断
+
+中断前的进度：
+✅ 小程序1 - 全部完成
+⏸️ 小程序2 - 汇总数据（进行中）← 中断点
+❌ 小程序3 - 未开始
+
+继续拉取后的行为：
+✅ 小程序1 - 跳过（已完成）
+⏸️ 小程序2 - 从汇总数据继续
+❌ 小程序3 - 从头开始
+```
+
+**用户体验**：
+- 拉取中：显示"中断执行"按钮（红色）
+- 中断成功：提示"已中断，可继续拉取"
+- 继续拉取：按钮显示"继续执行"（橙色）
+- 重新拉取：用户可选择"重新拉取"（清空进度）
+
+**API 设计**：
+
+```
+POST /api/fetch/interrupt
+  Headers: Authorization: Bearer <token>
+  Description: 中断当前拉取
+  Response: { 
+    success: true, 
+    message: "已成功中断拉取",
+    canResume: true 
+  }
+
+POST /api/fetch/resume
+  Headers: Authorization: Bearer <token>
+  Description: 从断点继续拉取
+  Response: (SSE Stream) - 同 execute
+
+POST /api/fetch/restart
+  Headers: Authorization: Bearer <token>
+  Description: 重新开始拉取（清空进度）
+  Response: (SSE Stream) - 同 execute
+
+GET /api/fetch/progress
+  Headers: Authorization: Bearer <token>
+  Response: { 
+    isLocked: true,
+    lockedBy: "user1",
+    currentProgram: 2,
+    totalPrograms: 3,
+    currentDataType: "summary",
+    canResume: true
+  }
+```
+
+#### 3.3.3 拉取状态展示
 
 **功能描述**：实时展示拉取进度和日志
 
@@ -224,7 +322,7 @@ func (l *FetchLock) Release(username string) bool {
 总耗时: 5 分钟 0 秒
 ```
 
-#### 3.3.3 并发控制
+#### 3.3.4 并发控制
 
 **功能描述**：防止多人同时执行拉取操作
 
@@ -278,6 +376,9 @@ CREATE TABLE operation_log (
 - `FETCH_START` - 开始拉取
 - `FETCH_SUCCESS` - 拉取成功
 - `FETCH_FAILED` - 拉取失败
+- `FETCH_ABORT` - 拉取中断
+- `FETCH_RESUME` - 拉取继续
+- `FETCH_RESTART` - 拉取重启
 - `MINI_PROGRAM_ADD` - 添加小程序
 - `MINI_PROGRAM_EDIT` - 编辑小程序
 - `MINI_PROGRAM_DELETE` - 删除小程序
@@ -416,10 +517,30 @@ DELETE /api/mini-programs/:id   # 管理员
 ```
 POST /api/fetch/execute
   Headers: Authorization: Bearer <token>
+  Description: 开始执行数据拉取
   Response: (SSE Stream)
     data: {"type": "log", "content": "..."}
     data: {"type": "progress", "percent": 50}
     data: {"type": "complete", "success": true}
+
+POST /api/fetch/interrupt
+  Headers: Authorization: Bearer <token>
+  Description: 中断当前拉取
+  Response: { 
+    success: true, 
+    message: "已成功中断拉取",
+    canResume: true 
+  }
+
+POST /api/fetch/resume
+  Headers: Authorization: Bearer <token>
+  Description: 从断点继续拉取
+  Response: (SSE Stream) - 同 execute
+
+POST /api/fetch/restart
+  Headers: Authorization: Bearer <token>
+  Description: 重新开始拉取（清空进度）
+  Response: (SSE Stream) - 同 execute
 
 GET /api/fetch/status
   Headers: Authorization: Bearer <token>
@@ -427,6 +548,22 @@ GET /api/fetch/status
     isLocked: true, 
     lockedBy: "user1", 
     lockedAt: "2026-05-22T10:00:00Z" 
+  }
+
+GET /api/fetch/progress
+  Headers: Authorization: Bearer <token>
+  Response: { 
+    isLocked: true,
+    lockedBy: "user1",
+    currentProgram: 2,
+    totalPrograms: 3,
+    currentDataType: "summary",
+    canResume: true,
+    programStatuses: [
+      { name: "小程序1", status: "completed" },
+      { name: "小程序2", status: "in_progress" },
+      { name: "小程序3", status: "pending" }
+    ]
   }
 ```
 
@@ -461,6 +598,26 @@ CREATE TABLE fetch_lock (
     locked_by VARCHAR(50) COMMENT '锁定者用户名',
     locked_at DATETIME COMMENT '锁定时间',
     expires_at DATETIME COMMENT '锁过期时间',
+    CONSTRAINT single_row CHECK (id = 1)
+);
+```
+
+#### 5.1.3 拉取进度表（fetch_progress）
+
+```sql
+CREATE TABLE fetch_progress (
+    id INT PRIMARY KEY DEFAULT 1,
+    current_program_index INT DEFAULT 0 COMMENT '当前处理的小程序索引',
+    program_names TEXT COMMENT '逗号分隔的小程序名称列表',
+    program_ids TEXT COMMENT '逗号分隔的小程序ID列表',
+    adunit_list_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    summary_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    detail_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    settlement_status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending/completed',
+    current_data_type VARCHAR(50) COMMENT '当前正在拉取的数据类型',
+    locked_by VARCHAR(50) COMMENT '当前锁定者',
+    locked_at DATETIME COMMENT '锁定时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT single_row CHECK (id = 1)
 );
 ```
@@ -537,12 +694,19 @@ CREATE TABLE fetch_lock (
 - 拉取状态显示
   - 当前状态（空闲/拉取中/锁定者信息）
   - 锁定时间
-- 拉取按钮
-  - 空闲时："开始执行"
-  - 拉取中："拉取中..."（禁用）
-  - 被锁定："数据拉取中，请勿重复操作"
+  - 当前处理的小程序和进度
+- 拉取按钮组
+  - 空闲时："开始执行"（蓝色主按钮）
+  - 拉取中："中断执行"（红色按钮）
+  - 中断后："继续执行"（橙色按钮）/ "重新拉取"（灰色按钮）
+  - 被锁定："数据拉取中，请勿重复操作"（提示信息）
 - 进度条
 - 实时日志区
+- 每个小程序的拉取状态指示：
+  - ✅ 已完成（绿色勾选）
+  - ⏸️ 进行中（橙色旋转）
+  - ❌ 失败（红色叉号）
+  - ⏳ 待处理（灰色圆圈）
 
 #### 6.2.5 操作日志
 
