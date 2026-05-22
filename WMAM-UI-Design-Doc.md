@@ -34,19 +34,25 @@
 
 | 变量名 | 颜色值 | 用途 |
 |--------|--------|------|
-| --bg-primary | #ffffff | 主背景色 |
+| --bg-primary | #fafafa | 主背景色 |
 | --bg-secondary | #fafafa | 次要背景色（导航栏）|
 | --bg-card | #ffffff | 卡片背景 |
-| --bg-hover | #f5f5f5 | 悬浮背景 |
+| --bg-hover | #ebebeb | 悬浮背景 |
 | --text-primary | #000000 | 主要文字 |
 | --text-secondary | #666666 | 次要文字 |
 | --text-muted | #999999 | 弱化文字 |
+| --sidebar-text | #4d4d4d | 侧边栏默认文字 |
+| --sidebar-text-active | #171717 | 侧边栏选中/悬浮文字 |
 | --border | #e5e5e5 | 边框 |
 | --accent | #000000 | 强调色（按钮） |
 | --accent-hover | #333333 | 强调色悬停 |
 | --success | #22c55e | 成功状态 |
 | --warning | #f59e0b | 警告状态 |
 | --error | #ef4444 | 错误状态 |
+| --toggle-on-bg | #171717 | 开关开启背景 |
+| --toggle-off-bg | #e5e5e5 | 开关关闭背景 |
+| --toggle-thumb | #ffffff | 开关滑块（关闭） |
+| --toggle-thumb-on | #ffffff | 开关滑块（开启） |
 
 ### 2.2 暗色主题 (Dark Mode)
 
@@ -55,16 +61,22 @@
 | --bg-primary | #0a0a0a | 主背景色 |
 | --bg-secondary | #111111 | 次要背景色（导航栏）|
 | --bg-card | #111111 | 卡片背景 |
-| --bg-hover | #1a1a1a | 悬浮背景 |
+| --bg-hover | #1f1f1f | 悬浮背景 |
 | --text-primary | #ffffff | 主要文字 |
 | --text-secondary | #a1a1aa | 次要文字 |
 | --text-muted | #71717a | 弱化文字 |
+| --sidebar-text | #a1a1aa | 侧边栏默认文字 |
+| --sidebar-text-active | #ffffff | 侧边栏选中/悬浮文字 |
 | --border | #27272a | 边框 |
 | --accent | #ffffff | 强调色（按钮） |
 | --accent-hover | #e5e5e5 | 强调色悬停 |
 | --success | #22c55e | 成功状态 |
 | --warning | #f59e0b | 警告状态 |
 | --error | #ef4444 | 错误状态 |
+| --toggle-on-bg | #e5e5e5 | 开关开启背景 |
+| --toggle-off-bg | #171717 | 开关关闭背景 |
+| --toggle-thumb | #ffffff | 开关滑块（关闭） |
+| --toggle-thumb-on | #171717 | 开关滑块（开启） |
 
 ### 2.3 主题切换
 
@@ -99,9 +111,9 @@
 
 - **侧边栏宽度**：240px（固定）
 - **顶部栏高度**：64px（固定）
-- **内容区边距**：24px
+- **内容区域边距**：24px
 - **卡片间距**：16px
-- **内容区域最大宽度**：1200px（居中）
+- **内容区域最大宽度**：1080px（居中）
 
 ---
 
@@ -122,25 +134,28 @@
 
 ### 4.2 侧边栏 (Sidebar)
 
-**导航项：
+**导航项：**
 
 - 📊 仪表盘 (Dashboard) - 默认首页
 - 📱 小程序 (Mini Programs) - 小程序列表管理
 - ⏱️ 执行拉取 (Execute Fetch) - 数据拉取执行
 - 📜 操作日志 (Activity Log) - 操作历史记录
+- 🗄️ 数据库配置 (Database Config) - 数据库连接配置（仅管理员可见）
 - 👤 用户管理 (User Management) - 用户管理（仅管理员可见）
 
-**选中状态：
+**导航项样式：**
 
+- 默认文字颜色：--sidebar-text
+- hover/选中文字颜色：--sidebar-text-active
 - 背景色：--bg-hover
 - 左侧指示条：3px，颜色 --accent
-- 文字加粗
+- 文字加粗（选中状态）
 
 ### 4.3 卡片 (Card)
 
 **样式**
 
-- 圆角：8px
+- 圆角：12px
 - 边框：1px solid --border
 - 背景色：--bg-card
 - 内边距：24px
@@ -149,33 +164,59 @@
 
 ### 4.4 按钮 (Button)
 
-**主按钮 (Primary)
+**主按钮 (Primary)**
 
 - 背景色：--accent
-- 文字色：亮色主题白/暗色主题黑
-- 圆角：6px
-- 内边距：10px 20px
-- 悬停：--accent-hover
+- 文字色：--bg-primary
+- 圆角：8px
+- 内边距：12px
+- 悬停：--accent-hover，轻微上浮 -1px
 - 文字：600 字重
 
-**次要按钮 (Secondary)
+**次要按钮 (Secondary)**
 
 - 背景色：透明
 - 边框：1px solid --border
 - 文字色：--text-primary
+- 圆角：8px
+- 内边距：10px 20px
 - 悬停：--bg-hover
 
-**危险按钮 (Danger)
+**小按钮 (Small)**
+
+- 宽度：80px
+- 高度：40px
+- 圆角：8px
+- 内边距：10px 8px
+- 文字大小：13px
+
+**危险按钮 (Danger)**
 
 - 背景色：--error
 - 文字色：白色
+- 悬停：#dc2626
 
-### 4.5 输入框 (Input)
+### 4.5 切换开关 (Toggle Switch)
 
-- 圆角：6px
+**样式**
+
+- 宽度：48px
+- 高度：26px
+- 圆角：26px
+- 滑块尺寸：18x18px
+- 无 focus 阴影效果
+
+**状态**
+
+- 关闭状态：背景 --toggle-off-bg，滑块 --toggle-thumb
+- 开启状态：背景 --toggle-on-bg，滑块 --toggle-thumb-on
+
+### 4.6 输入框 (Input)
+
+- 圆角：8px
 - 边框：1px solid --border
 - 背景色：--bg-primary
-- 内边距：10px 14px
+- 内边距：12px 14px
 - 聚焦状态：边框 --accent，无阴影
 
 ---
@@ -234,15 +275,17 @@
 标题 + 添加按钮
 
 小程序列表卡片
-┌─────────────────────────────────────────┐
-│ 小程序1  AppID: xxx  [编辑] [删除]│
-│ 小程序2  AppID: xxx  [编辑] [删除]│
-│ ...                               │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│ 名称    AppID               状态      操作       │
+│ 小程序 A  wx1234...        [开关]   [编辑][删除] │
+│ 小程序 B  wxabcd...        [开关]   [编辑][删除] │
+│ ...                                                   │
+└─────────────────────────────────────────────────────────┘
 ```
 
-**功能（仅管理员可见编辑/删除按钮）：
+**功能（仅管理员可见编辑/删除按钮）：**
 
+- 状态列：使用切换开关控制小程序启用/禁用
 - 普通用户仅查看，无操作按钮
 
 ### 5.4 执行拉取页 (Execute Fetch Page)
@@ -272,25 +315,65 @@
 
 ### 5.5 操作日志页 (Activity Log Page)
 
-**日志列表，时间线样式
+**表格布局**
 
 ```
-2025-05-22 14:30 用户A 开始拉取数据
-2025-05-22 12:00 用户B 拉取完成
-2025-05-22 10:00 管理员 添加小程序
+┌───────────────────────────────────────────────────────────────┐
+│ 时间              用户    操作          状态      │
+│ 2024-01-15 14:30  管理员  执行数据拉取   [成功]  │
+│ 2024-01-15 12:15  用户A   执行数据拉取   [成功]  │
+│ ...                                                       │
+└───────────────────────────────────────────────────────────────┘
 ```
+
+**样式**
+
+- 用户和操作列文字：13px
 
 ### 5.6 用户管理页 (User Management Page)
 
 **仅管理员可见**
 
 ```
-用户列表
+标题 + 添加用户按钮
 
-用户名  角色    [编辑] [禁用] [删除]
-
-添加用户按钮
+用户列表卡片
+┌───────────────────────────────────────────────────────────┐
+│ 用户名  角色          状态      操作           │
+│ admin    [管理员]     [开关]   [编辑]          │
+│ userA    [普通用户]   [开关]   [编辑][禁用] │
+│ ...                                                    │
+└───────────────────────────────────────────────────────────┘
 ```
+
+**功能**
+
+- 角色使用徽章展示
+- 状态列：使用切换开关控制用户启用/禁用
+
+### 5.7 数据库配置页 (Database Config Page)
+
+**仅管理员可见**
+
+```
+标题
+
+配置表单卡片
+┌───────────────────────────────────────────────┐
+│ 主机地址: [输入框，只读]              │
+│ 端口号:   [输入框，只读]  数据库名: [输入框，只读] │
+│ 用户名:   [输入框，只读]  密码:   [输入框，只读] │
+│                                      │
+│ [测试连接] [保存配置]               │
+│                                      │
+│ 📊 连接状态: ⚪ 未测试            │
+└───────────────────────────────────────────────┘
+```
+
+**功能**
+
+- 所有配置字段默认只读
+- 仅管理员可编辑和保存配置
 
 ---
 
@@ -318,29 +401,41 @@
 ```css
 :root {
   /* 亮色主题 */
-  --bg-primary: #ffffff;
+  --bg-primary: #fafafa;
   --bg-secondary: #fafafa;
   --bg-card: #ffffff;
-  --bg-hover: #f5f5f5;
+  --bg-hover: #ebebeb;
   --text-primary: #000000;
   --text-secondary: #666666;
   --text-muted: #999999;
+  --sidebar-text: #4d4d4d;
+  --sidebar-text-active: #171717;
   --border: #e5e5e5;
   --accent: #000000;
   --accent-hover: #333333;
+  --toggle-on-bg: #171717;
+  --toggle-off-bg: #e5e5e5;
+  --toggle-thumb: #ffffff;
+  --toggle-thumb-on: #ffffff;
 }
 
 [data-theme="dark"] {
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
   --bg-card: #111111;
-  --bg-hover: #1a1a1a;
+  --bg-hover: #1f1f1f;
   --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
+  --sidebar-text: #a1a1aa;
+  --sidebar-text-active: #ffffff;
   --border: #27272a;
   --accent: #ffffff;
   --accent-hover: #e5e5e5;
+  --toggle-on-bg: #e5e5e5;
+  --toggle-off-bg: #171717;
+  --toggle-thumb: #ffffff;
+  --toggle-thumb-on: #171717;
 }
 
 * {
