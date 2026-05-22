@@ -22,6 +22,10 @@
             --success: #22c55e;
             --warning: #f59e0b;
             --error: #ef4444;
+            --toggle-on-bg: #171717;
+            --toggle-off-bg: #e5e5e5;
+            --toggle-thumb: #ffffff;
+            --toggle-thumb-on: #ffffff;
             --sidebar-width: 240px;
             --header-height: 64px;
         }
@@ -39,6 +43,10 @@
             --border: #27272a;
             --accent: #ffffff;
             --accent-hover: #e5e5e5;
+            --toggle-on-bg: #e5e5e5;
+            --toggle-off-bg: #171717;
+            --toggle-thumb: #ffffff;
+            --toggle-thumb-on: #171717;
         }
 
         * {
@@ -308,7 +316,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #ccc;
+            background-color: var(--toggle-off-bg);
             transition: 0.3s;
             border-radius: 26px;
         }
@@ -320,17 +328,21 @@
             width: 18px;
             left: 4px;
             bottom: 4px;
-            background-color: white;
+            background-color: var(--toggle-thumb);
             transition: 0.3s;
             border-radius: 50%;
         }
         
         input:checked + .toggle-slider {
-            background-color: var(--success);
+            background-color: var(--toggle-on-bg);
+        }
+        
+        input:checked + .toggle-slider:before {
+            background-color: var(--toggle-thumb-on);
         }
         
         input:focus + .toggle-slider {
-            box-shadow: 0 0 1px var(--success);
+            box-shadow: 0 0 1px var(--toggle-on-bg);
         }
         
         input:checked + .toggle-slider:before {
